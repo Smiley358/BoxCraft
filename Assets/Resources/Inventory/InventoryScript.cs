@@ -33,8 +33,17 @@ public class InventoryScript : MonoBehaviour
     //スロット間のパディング
     public Vector2 slotPadding;
 
+    //ショートカットの移動コンポーネント
+    private RectTransform itemShortcutRect;
+    //ショートカットのサイズ
+    private Vector2 itemShortcutSize;
+    //アイテムショートカット
+    public GameObject ItemShortcut;
+
     //スロットのprefab
     public GameObject SlotPrefab;
+    //アイテムショートカット用スロットのprefab
+    public GameObject ItemShortcutSlotPrefab;
     //スロットリスト
     private List<SlotData> allSlots;
 
@@ -61,7 +70,6 @@ public class InventoryScript : MonoBehaviour
         hoverSlotScript = HoverSlot.GetComponent<SlotScript>();
         //一番最下位へ（最前面に表示するため）
         HoverSlot.transform.SetAsLastSibling();
-
         //非活性化
         HoverSlot.SetActive(false);
 
@@ -123,10 +131,10 @@ public class InventoryScript : MonoBehaviour
         while (true)
         {
             //まずは空いているスロットを探す
-            foreach(var slot in allSlots)
+            foreach (var slot in allSlots)
             {
                 //アイテムオブジェクトにスタックされたアイテムがもうない
-                if(item.contentCount <= 0)
+                if (item.contentCount <= 0)
                 {
                     break;
                 }
@@ -147,7 +155,7 @@ public class InventoryScript : MonoBehaviour
             }
 
             //追加できていないものがある
-            if(item.contentCount > 0)
+            if (item.contentCount > 0)
             {
                 Debug.LogWarning("アイテム追加失敗");
                 return false;
@@ -164,6 +172,9 @@ public class InventoryScript : MonoBehaviour
     /// </summary>
     private void CreateLayout()
     {
+        //まずインベントリー本体を生成
+
+        //スロットリスト
         allSlots = new List<SlotData>();
         //インベントリーのトランスフォームコンポーネント取得
         inventoryRect = GetComponent<RectTransform>();
@@ -178,9 +189,9 @@ public class InventoryScript : MonoBehaviour
 
         int columns = Slots / Rows;
 
-        for(int y = 0; y < Rows; y++)
+        for (int y = 0; y < Rows; y++)
         {
-            for(int x = 0; x < columns; x++)
+            for (int x = 0; x < columns; x++)
             {
                 //スロットの生成
                 GameObject newSlot = Instantiate(SlotPrefab);
@@ -203,7 +214,54 @@ public class InventoryScript : MonoBehaviour
                 allSlots.Add(slotData);
             }
         }
+
+
+        //アイテムショートカットを生成
+
+        //数字キー分個作る
+        int itemShortCutSlots = ItemShortcutSlotScript.IndexList.Length;
+        //ショートカットのトランスフォームコンポーネント取得
+        itemShortcutRect = ItemShortcut.GetComponent<RectTransform>();
+        //スロットの大きさはUnityエディターの物を使用する
+        float itemShortcutSlotSize = ItemShortcutSlotPrefab.GetComponent<RectTransform>().rect.width;
+        //ショートカットのサイズを計算
+        itemShortcutSize.x = itemShortCutSlots * (itemShortcutSlotSize + slotPadding.x) + slotPadding.x;
+        itemShortcutSize.y = itemShortcutSlotSize + slotPadding.y * 2;
+        //ショートカットのサイズをセット
+        itemShortcutRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, itemShortcutSize.x);
+        itemShortcutRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, itemShortcutSize.y);
+
+        for (int x = 0; x < itemShortCutSlots; x++)
+        {
+            //スロットの生成
+            GameObject newSlot = ItemShortcutSlotScript.Create(ItemShortcutSlotPrefab);
+            if (newSlot == null)
+            {
+                Debug.Log("Item Shortcut Initialize Failed");
+                break;
+            }
+            //スロットのトランスフォームコンポーネントを取得
+            RectTransform slotRectTransform = newSlot.GetComponent<RectTransform>();
+            //名前を変更
+            newSlot.name = "ShortcutSlot";
+            //親をItemShortcutに
+            newSlot.transform.SetParent(ItemShortcut.transform);
+            //サイズと位置をセット
+            Vector3 offset = new Vector3(itemShortcutRect.rect.width, itemShortcutRect.rect.height, 0);
+            offset.Scale(new Vector3(itemShortcutRect.pivot.x, itemShortcutRect.pivot.y, 0));
+            slotRectTransform.localPosition = new Vector3(slotPadding.x * (x + 1) + (itemShortcutSlotSize * x) - offset.x, -slotPadding.y + offset.y);
+            slotRectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, itemShortcutSlotSize);
+            slotRectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, itemShortcutSlotSize);
+
+            //リストに格納
+            SlotScript slotScript = newSlot.GetComponent<SlotScript>();
+            slotScript.Inventory = this;
+            slotScript.PrepareEventTrigger();
+            SlotData slotData = new SlotData(newSlot, slotScript);
+            allSlots.Add(slotData);
+        }
     }
+
 
     /// <summary>
     /// アイテムの使用
@@ -270,7 +328,7 @@ public class InventoryScript : MonoBehaviour
         if (slot.SlotScript.IsEmpty()) return;
 
         //右クリックで使用か選択か
-        if (slot.SlotScript.Item.IsRMBUse)
+        if (slot.SlotScript.Item.IsImmediateUse)
         {
             //アイテム使用
             UseItem(slot);

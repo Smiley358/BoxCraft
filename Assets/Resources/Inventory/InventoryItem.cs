@@ -12,7 +12,7 @@ public class InventoryItem
     //アイテムの最大スタック数
     public int MaxStackSize = 10;
     //右クリックで使用するか/選択状態死にするか
-    public bool IsRMBUse { get; private set; }
+    public bool IsImmediateUse { get; private set; }
 
     public InventoryItem(InventoryItem itemData)
     {
@@ -23,7 +23,7 @@ public class InventoryItem
         DeselectDelegate = itemData.DeselectDelegate;
         UseDelegate = itemData.UseDelegate;
         UsedupDelegate = itemData.UsedupDelegate;
-        IsRMBUse = itemData.IsRMBUse;
+        IsImmediateUse = itemData.IsImmediateUse;
     }
 
     public InventoryItem() { }

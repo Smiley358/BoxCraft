@@ -23,13 +23,6 @@ public abstract class BoxBase : MonoBehaviour
         ItemData.SelectDelegate = (SlotScript slot) =>
         {
             BoxSpawnerScript boxSpawnerScript = GameObject.Find("BoxSpawner")?.GetComponent<BoxSpawnerScript>();
-            //選択されたのが現在と同じなら
-            if(boxSpawnerScript.selectSlot == slot)
-            {
-                //選択解除デリゲートを実行
-                ItemData.DeselectDelegate(slot);
-                return;
-            }
             string path = "Box/" + ItemData.ItemName + "/" + ItemData.ItemName;
             boxSpawnerScript.Box = Resources.Load(path) as GameObject;
             boxSpawnerScript.PredictionBoxUpdate();

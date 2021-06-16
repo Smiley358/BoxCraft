@@ -16,14 +16,14 @@ public class InventoryItem
 
     public InventoryItem(InventoryItem itemData)
     {
-        ItemName = itemData.ItemName;
-        ItemIcon = itemData.ItemIcon;
-        MaxStackSize = itemData.MaxStackSize;
-        SelectDelegate = itemData.SelectDelegate;
+        ItemName         = itemData.ItemName;
+        ItemIcon         = itemData.ItemIcon;
+        MaxStackSize     = itemData.MaxStackSize;
+        SelectDelegate   = itemData.SelectDelegate;
         DeselectDelegate = itemData.DeselectDelegate;
-        UseDelegate = itemData.UseDelegate;
-        UsedupDelegate = itemData.UsedupDelegate;
-        IsImmediateUse = itemData.IsImmediateUse;
+        UseDelegate      = itemData.UseDelegate;
+        UsedupDelegate   = itemData.UsedupDelegate;
+        IsImmediateUse   = itemData.IsImmediateUse;
     }
 
     public InventoryItem() { }

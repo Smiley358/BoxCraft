@@ -7,21 +7,6 @@ using System;
 using System.Threading;
 public class InventoryScript : MonoBehaviour
 {
-    /// <summary>
-    /// スロットリストに保存するデータ
-    /// </summary>
-    public class SlotData
-    {
-        public GameObject Slot;
-        public SlotScript SlotScript;
-
-        public SlotData(GameObject slot, SlotScript slotScript)
-        {
-            Slot = slot;
-            SlotScript = slotScript;
-        }
-    }
-
     //インベントリーの移動コンポーネント
     private RectTransform inventoryRect;
     //インベントリーのサイズ
@@ -33,17 +18,8 @@ public class InventoryScript : MonoBehaviour
     //スロット間のパディング
     public Vector2 slotPadding;
 
-    //ショートカットの移動コンポーネント
-    private RectTransform itemShortcutRect;
-    //ショートカットのサイズ
-    private Vector2 itemShortcutSize;
-    //アイテムショートカット
-    public GameObject ItemShortcut;
-
     //スロットのprefab
     public GameObject SlotPrefab;
-    //アイテムショートカット用スロットのprefab
-    public GameObject ItemShortcutSlotPrefab;
     //スロットリスト
     private List<SlotData> allSlots;
 
@@ -55,6 +31,13 @@ public class InventoryScript : MonoBehaviour
     private Image hoverSlotIconImage;
     //ドラッグ元のスロット
     private SlotData dragSlotData;
+
+    //選択中のスロット
+    public SlotData selectSlotData;
+    //選択中
+    public Sprite SelectSprite;
+    //非選択
+    public Sprite UnselectSprite;
 
     //インベントリーの有効フラグ
     public bool IsActiveInventory { get; private set; } = false;
@@ -68,6 +51,7 @@ public class InventoryScript : MonoBehaviour
         //ホバー用のスロットの初期設定
         hoverSlotIconImage = HoverSlot.transform.Find("ItemIcon")?.GetComponent<Image>();
         hoverSlotScript = HoverSlot.GetComponent<SlotScript>();
+        hoverSlotScript.InventoryScript = this;
         //一番最下位へ（最前面に表示するため）
         HoverSlot.transform.SetAsLastSibling();
         //非活性化
@@ -193,72 +177,21 @@ public class InventoryScript : MonoBehaviour
         {
             for (int x = 0; x < columns; x++)
             {
-                //スロットの生成
-                GameObject newSlot = Instantiate(SlotPrefab);
+                SlotData slotData = SlotScript.Create(SlotPrefab, gameObject, this);
                 //スロットのトランスフォームコンポーネントを取得
-                RectTransform slotRectTransform = newSlot.GetComponent<RectTransform>();
+                RectTransform slotRectTransform = slotData.Slot.GetComponent<RectTransform>();
                 //名前を変更
-                newSlot.name = "Slot";
+                slotData.Slot.name = "Slot";
                 //親をインベントリに
-                newSlot.transform.SetParent(transform);
+                slotData.Slot.transform.SetParent(transform);
                 //サイズと位置をセット
                 slotRectTransform.localPosition = new Vector3(slotPadding.x * (x + 1) + (SlotSize * x), -slotPadding.y * (y + 1) - (SlotSize * y));
                 slotRectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, SlotSize);
                 slotRectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, SlotSize);
 
                 //リストに格納
-                SlotScript slotScript = newSlot.GetComponent<SlotScript>();
-                slotScript.Inventory = this;
-                slotScript.PrepareEventTrigger();
-                SlotData slotData = new SlotData(newSlot, slotScript);
                 allSlots.Add(slotData);
             }
-        }
-
-
-        //アイテムショートカットを生成
-
-        //数字キー分個作る
-        int itemShortCutSlots = ItemShortcutSlotScript.IndexList.Length;
-        //ショートカットのトランスフォームコンポーネント取得
-        itemShortcutRect = ItemShortcut.GetComponent<RectTransform>();
-        //スロットの大きさはUnityエディターの物を使用する
-        float itemShortcutSlotSize = ItemShortcutSlotPrefab.GetComponent<RectTransform>().rect.width;
-        //ショートカットのサイズを計算
-        itemShortcutSize.x = itemShortCutSlots * (itemShortcutSlotSize + slotPadding.x) + slotPadding.x;
-        itemShortcutSize.y = itemShortcutSlotSize + slotPadding.y * 2;
-        //ショートカットのサイズをセット
-        itemShortcutRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, itemShortcutSize.x);
-        itemShortcutRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, itemShortcutSize.y);
-
-        for (int x = 0; x < itemShortCutSlots; x++)
-        {
-            //スロットの生成
-            GameObject newSlot = ItemShortcutSlotScript.Create(ItemShortcutSlotPrefab);
-            if (newSlot == null)
-            {
-                Debug.Log("Item Shortcut Initialize Failed");
-                break;
-            }
-            //スロットのトランスフォームコンポーネントを取得
-            RectTransform slotRectTransform = newSlot.GetComponent<RectTransform>();
-            //名前を変更
-            newSlot.name = "ShortcutSlot";
-            //親をItemShortcutに
-            newSlot.transform.SetParent(ItemShortcut.transform);
-            //サイズと位置をセット
-            Vector3 offset = new Vector3(itemShortcutRect.rect.width, itemShortcutRect.rect.height, 0);
-            offset.Scale(new Vector3(itemShortcutRect.pivot.x, itemShortcutRect.pivot.y, 0));
-            slotRectTransform.localPosition = new Vector3(slotPadding.x * (x + 1) + (itemShortcutSlotSize * x) - offset.x, -slotPadding.y + offset.y);
-            slotRectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, itemShortcutSlotSize);
-            slotRectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, itemShortcutSlotSize);
-
-            //リストに格納
-            SlotScript slotScript = newSlot.GetComponent<SlotScript>();
-            slotScript.Inventory = this;
-            slotScript.PrepareEventTrigger();
-            SlotData slotData = new SlotData(newSlot, slotScript);
-            allSlots.Add(slotData);
         }
     }
 
@@ -287,7 +220,7 @@ public class InventoryScript : MonoBehaviour
 
         //ホバースロットを有効に
         HoverSlot.SetActive(true);
-        //スロット情報の置き換え
+        //ホバースロット情報の置き換え
         hoverSlotScript.Replace(slot.SlotScript);
         //ドラッグ元のスロットデータ
         dragSlotData = slot;
@@ -307,17 +240,27 @@ public class InventoryScript : MonoBehaviour
         {
             //ドロップ元のスロットにドロップ先スロットのデータを移す
             dragSlotData.SlotScript.Replace(slot.SlotScript);
+            //ドロップ元が選択中なら
+            if (dragSlotData == selectSlotData)
+            {
+                //選択解除
+                DeselectSlot(dragSlotData);
+            }
             //ドロップ先のスロットにドラッグ元(ホバースロット)スロットのデータを移す
             slot.SlotScript.Replace(hoverSlotScript);
-            //選択状態にする
-            slot.Slot.GetComponent<Button>().Select();
+            //ドロップ先が選択中なら
+            if(selectSlotData == slot)
+            {
+                slot.SlotScript.Select();
+                //SelectSlot(slot);
+            }
             //ドラッグ元データの保持を破棄
             dragSlotData = null;
         }
 
         //ホバースロットを無効に
         HoverSlot.SetActive(false);
-        hoverSlotScript.ResetSlot();
+        hoverSlotScript.ResetSlot(false);
     }
 
     public void OnPinterClickDelegate(PointerEventData data, SlotData slot)
@@ -328,15 +271,40 @@ public class InventoryScript : MonoBehaviour
         if (slot.SlotScript.IsEmpty()) return;
 
         //右クリックで使用か選択か
-        if (slot.SlotScript.Item.IsImmediateUse)
+        if (slot.SlotScript.Item?.IsImmediateUse == true)
         {
             //アイテム使用
             UseItem(slot);
         }
         else
         {
-            //アイテム選択
-            slot.SlotScript.Item?.SelectDelegate?.Invoke(slot.SlotScript);
+            //同じスロットを右クリックした
+            if (slot == selectSlotData)
+            {
+                //アイテムスロット選択解除
+                DeselectSlot(slot);
+            }
+            else
+            {
+                //アイテムスロット選択
+                SelectSlot(slot);
+            }
         }
+    }
+
+    public void SelectSlot(SlotData slotData)
+    {
+        //アイテム選択
+        slotData.SlotScript.Select();
+        //選択中スロットをセット
+        selectSlotData = slotData;
+    }
+
+    public void DeselectSlot(SlotData slotData)
+    {
+        //アイテム選択解除
+        slotData.SlotScript.Deselect();
+        //選択中スロットをなくす
+        selectSlotData = null;
     }
 }

@@ -12,7 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 443e4d0a81657054fa2ec1e0690c5772, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inventory: {fileID: 0}
 --- !u!1 &1697634970515008632
 GameObject:
   m_ObjectHideFlags: 0
@@ -120,6 +119,10 @@ PrefabInstance:
       value: 0.85882354
       objectReference: {fileID: 0}
     - target: {fileID: 4186198137400352717, guid: e17db7e6f12c85342adfb2f2a55a554e, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5059072629955672585, guid: e17db7e6f12c85342adfb2f2a55a554e, type: 3}
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}

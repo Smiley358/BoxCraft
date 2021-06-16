@@ -3,69 +3,60 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class ItemShortcutSlotScript : MonoBehaviour
+//アイテムショートカットのスロット保持用
+public class ItemShortcutSlotData
 {
-    //アイテムショートカットのスロット保持用
-    public class ItemShortcutSlotData
+    public GameObject Slot;
+    public SlotScript SlotScript;
+    public ItemShortcutSlotScript ItemShortcutSlotScript;
+
+    public ItemShortcutSlotData(ItemShortcutSlotData data)
     {
-        public GameObject Slot;
-        public SlotScript SlotScript;
-        public ItemShortcutSlotScript ItemShortcutSlotScript;
-
-        public ItemShortcutSlotData(ItemShortcutSlotData data)
-        {
-            Slot = data.Slot;
-            SlotScript = data.SlotScript;
-            ItemShortcutSlotScript = data.ItemShortcutSlotScript;
-        }
-
-        public ItemShortcutSlotData(GameObject slot,SlotScript slotScript,ItemShortcutSlotScript itemShortcutSlotScript)
-        {
-            Slot = slot;
-            SlotScript = slotScript;
-            ItemShortcutSlotScript = itemShortcutSlotScript;
-        }
+        Slot = data.Slot;
+        SlotScript = data.SlotScript;
+        ItemShortcutSlotScript = data.ItemShortcutSlotScript;
     }
 
-    //キー割り当て用インデックスリスト
-    public static readonly int[] IndexList = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
-    //現在の割り当て状況
-    private static int nowIndex = 0;
-    //スロット
-    public static Dictionary<int, ItemShortcutSlotData> itemShortcutSlots { get; private set; } = new Dictionary<int, ItemShortcutSlotData>(IndexList.Length);
+    public ItemShortcutSlotData(GameObject slot, SlotScript slotScript, ItemShortcutSlotScript itemShortcutSlotScript)
+    {
+        Slot = slot;
+        SlotScript = slotScript;
+        ItemShortcutSlotScript = itemShortcutSlotScript;
+    }
+}
 
+public class ItemShortcutSlotScript : MonoBehaviour
+{
     //ショートカット用スロットの作成と割り当て
-    public static GameObject Create(GameObject prefab)
+    public static ItemShortcutSlotData Create(GameObject prefab, GameObject inventory, InventoryScript inventoryScript,int[] IndexList,int index)
     {
         //キー割り当てできないので作らない
-        if (nowIndex > IndexList.Length - 1) return null;
+        if (index > IndexList.Length - 1) return null;
 
         //ショートカットスロット生成
         GameObject slot = Instantiate(prefab);
         ItemShortcutSlotScript itemShortcutSlotScript = slot.GetComponent<ItemShortcutSlotScript>();
-        itemShortcutSlotScript.slotScript = slot.GetComponent<SlotScript>();
+        itemShortcutSlotScript.slotData = new SlotData(slot, slot.GetComponent<SlotScript>());
+        //イベントハンドラー初期設定
+        itemShortcutSlotScript.slotData.SlotScript.PrepareEventTrigger();
+        itemShortcutSlotScript.slotData.SlotScript.InventoryScript = inventoryScript;
+
+
         //インデックス割り当て
-        itemShortcutSlotScript.Index = IndexList[nowIndex];
-        nowIndex++;
+        itemShortcutSlotScript.Index = IndexList[index];
         //インデックス表示
         Text text = slot.transform.Find("Index")?.GetComponent<Text>();
         text.text = itemShortcutSlotScript.Index.ToString();
 
-        //ディクショナリーへ追加
-        itemShortcutSlots.Add(itemShortcutSlotScript.Index, new ItemShortcutSlotData(slot, itemShortcutSlotScript.slotScript, itemShortcutSlotScript));
-
-        return slot;
+        return new ItemShortcutSlotData(slot, itemShortcutSlotScript.slotData.SlotScript, itemShortcutSlotScript);
     }
-
 
 
 
     //キー割り当て用インデックス
     public int Index { get; private set; } = -1;
-    //スロット本体の管理用クラス
-    private SlotScript slotScript;
-    //インベントリー
-    public GameObject inventory;
+    //インベントリーで管理しているスロットデータクラス
+    public SlotData slotData;
 
     void Update()
     {
@@ -73,7 +64,7 @@ public class ItemShortcutSlotScript : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha0 + Index))
         {
             //選択中にもう一回選択されたら選択解除
-            if (ItemShortcutScript.GetSelectIndexForSlotIndex() == Index)
+            if (slotData.SlotScript.InventoryScript.selectSlotData == slotData)
             {
                 ItemShortcutScript.SelectIndex = ItemShortcutScript.UNSELECT_INDEX;
                 SlotExit();
@@ -83,42 +74,30 @@ public class ItemShortcutSlotScript : MonoBehaviour
                 SlotEnter();
             }
         }
-
-        if (ItemShortcutScript.GetSelectIndexForSlotIndex() == Index)
-        {
-            //選択状態に
-            GetComponent<Button>().Select();
-        }
-        else
-        {
-
-        }
-
     }
 
     //選択
     public void SlotEnter()
     {
-        //空のスロットは選択できない
-        if (slotScript.IsEmpty()) return;
-
-        //即時使用か選択か
-        if (slotScript.Item.IsImmediateUse)
         {
-            //アイテム使用
-            inventory.SendMessage("UseItem", new InventoryScript.SlotData(gameObject, slotScript));
-        }
-        else
-        {
-            //アイテム選択
-            slotScript.Item?.SelectDelegate?.Invoke(slotScript);
+            //即時使用か選択か
+            if (slotData.SlotScript.Item?.IsImmediateUse == true)
+            {
+                //アイテム使用
+                slotData.SlotScript.InventoryScript.UseItem(slotData);
+            }
+            else
+            {
+                //アイテム選択
+                slotData.SlotScript.InventoryScript.SelectSlot(slotData);
+            }
         }
     }
     //選択終わり
     public void SlotExit()
     {
         //アイテム選択解除
-        slotScript.Item?.DeselectDelegate?.Invoke(slotScript);
+        slotData.SlotScript.InventoryScript.DeselectSlot(slotData);
     }
 
 }

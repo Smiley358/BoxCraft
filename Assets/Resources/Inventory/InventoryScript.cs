@@ -8,36 +8,37 @@ using System.Threading;
 public class InventoryScript : MonoBehaviour
 {
     //インベントリーのインスタンス
-    public static InventoryScript InventoryScriptInstance { get; private set; }
+    public static InventoryScript Instance { get; private set; }
+
+    //スロットリスト
+    private List<SlotData> allSlots;
     //インベントリーの移動コンポーネント
     private RectTransform inventoryRect;
     //インベントリーのサイズ
     private Vector2 inventorySize;
     //スロット数
-    public int Slots;
+    [SerializeField] private int slots;
     //行数
-    public int Rows;
+    [SerializeField] private int rows;
     //スロット間のパディング
-    public Vector2 slotPadding;
-
+    [SerializeField] private Vector2 slotPadding;
     //スロットのprefab
-    public GameObject SlotPrefab;
-    //スロットリスト
-    private List<SlotData> allSlots;
+    [SerializeField] private GameObject slotPrefab;
 
-    //ドラッグ用ホバースロット
-    public GameObject HoverSlot;
     //ドラッグ用ホバースロットの管理クラス
     private SlotScript hoverSlotScript;
     //ドラッグ用ホバースロットのアイコン
     private Image hoverSlotIconImage;
     //ドラッグ元のスロット
     private SlotData dragSlotData;
+    //ドラッグ用ホバースロット
+    [SerializeField] private GameObject hoverSlot;
 
-    //選択中
-    public Sprite SelectSprite;
-    //非選択
-    public Sprite UnselectSprite;
+    //選択中のアイコン
+    [field:SerializeField] public Sprite SelectSprite { get; protected set; }
+
+    //非選択のアイコン
+    [field:SerializeField] public Sprite UnselectSprite { get; protected set; }
 
     //インベントリーの有効フラグ
     public bool IsActiveInventory { get; private set; } = false;
@@ -45,24 +46,24 @@ public class InventoryScript : MonoBehaviour
 
     void Start()
     {
-        InventoryScriptInstance = this;
+        Instance = this;
 
         //インベントリーのレイアウトを作る
         CreateLayout();
 
         //ホバー用のスロットの初期設定
-        hoverSlotIconImage = HoverSlot.transform.Find("ItemIcon")?.GetComponent<Image>();
-        hoverSlotScript = HoverSlot.GetComponent<SlotScript>();
+        hoverSlotIconImage = hoverSlot.transform.Find("ItemIcon")?.GetComponent<Image>();
+        hoverSlotScript = hoverSlot.GetComponent<SlotScript>();
         //一番最下位へ（最前面に表示するため）
-        HoverSlot.transform.SetAsLastSibling();
+        hoverSlot.transform.SetAsLastSibling();
         //非活性化
-        HoverSlot.SetActive(false);
+        hoverSlot.SetActive(false);
 
         //インベントリーは閉じておく
         HideInventory();
     }
 
-    private void Update()
+    void Update()
     {
         //Tabでインベントリー開く
         if (Input.GetKeyDown(KeyCode.Tab))
@@ -85,20 +86,24 @@ public class InventoryScript : MonoBehaviour
             //ドラッグ元データの保持を破棄
             dragSlotData = null;
             //ホバースロットを無効化
-            HoverSlot.SetActive(false);
+            hoverSlot.SetActive(false);
             hoverSlotScript.ResetSlot();
         }
     }
 
-    //インベントリーを開く
+    /// <summary>
+    ///インベントリーを開く
+    /// </summary>
     public void ShowInventory()
     {
         //マウスカーソル戻す
         Cursor.lockState = CursorLockMode.None;
         gameObject.transform.localScale = Vector3.one;
     }
-
-    //インベントリーを閉じる
+    
+    /// <summary>
+    ///インベントリーを閉じる
+    /// </summary>
     public void HideInventory()
     {
         //マウスカールが外に出ないように
@@ -164,21 +169,21 @@ public class InventoryScript : MonoBehaviour
         //インベントリーのトランスフォームコンポーネント取得
         inventoryRect = GetComponent<RectTransform>();
         //スロットの大きさはUnityエディターの物を使用する
-        float SlotSize = SlotPrefab.GetComponent<RectTransform>().rect.width;
+        float SlotSize = slotPrefab.GetComponent<RectTransform>().rect.width;
         //インベントリーのサイズを計算
-        inventorySize.x = (Slots / Rows) * (SlotSize + slotPadding.x) + slotPadding.x;
-        inventorySize.y = Rows * (SlotSize + slotPadding.y) + slotPadding.y;
+        inventorySize.x = (slots / rows) * (SlotSize + slotPadding.x) + slotPadding.x;
+        inventorySize.y = rows * (SlotSize + slotPadding.y) + slotPadding.y;
         //インベントリーのサイズをセット
         inventoryRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, inventorySize.x);
         inventoryRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, inventorySize.y);
 
-        int columns = Slots / Rows;
+        int columns = slots / rows;
 
-        for (int y = 0; y < Rows; y++)
+        for (int y = 0; y < rows; y++)
         {
             for (int x = 0; x < columns; x++)
             {
-                SlotData slotData = SlotScript.Create(SlotPrefab, gameObject);
+                SlotData slotData = SlotScript.Create(slotPrefab);
                 //スロットのトランスフォームコンポーネントを取得
                 RectTransform slotRectTransform = slotData.Slot.GetComponent<RectTransform>();
                 //名前を変更
@@ -211,7 +216,11 @@ public class InventoryScript : MonoBehaviour
         return slot.SlotScript.UseItem();
     }
 
-
+    /// <summary>
+    /// ドラッグ開始イベントハンドラー
+    /// </summary>
+    /// <param name="data">イベント情報</param>
+    /// <param name="slot">スロット情報</param>
     public void OnBeginDragDelegate(PointerEventData data, SlotData slot)
     {
         //左クリック以外受け付けない
@@ -220,20 +229,30 @@ public class InventoryScript : MonoBehaviour
         if (slot.SlotScript.IsEmpty()) return;
 
         //ホバースロットを有効に
-        HoverSlot.SetActive(true);
+        hoverSlot.SetActive(true);
         //ホバースロット情報の置き換え
         hoverSlotScript.Replace(slot.SlotScript);
         //ドラッグ元のスロットデータ
         dragSlotData = slot;
     }
 
+    /// <summary>
+    /// ドラッグ中イベントハンドラー
+    /// </summary>
+    /// <param name="data">イベント情報</param>
+    /// <param name="slot">スロット情報</param>
     public void OnDragDelegate(PointerEventData data, SlotData slot)
     {
         Vector3 position = new Vector3(data.position.x, data.position.y, 0);
         //アイコンをマウスカーソルの位置へ
-        HoverSlot.transform.position = position;
+        hoverSlot.transform.position = position;
     }
 
+    /// <summary>
+    /// ドロップ時イベントハンドラー
+    /// </summary>
+    /// <param name="data">イベント情報</param>
+    /// <param name="slot">スロット情報</param>
     public void OnDropDelegate(PointerEventData data, SlotData slot)
     {
         //ドラッグ元のデータがある場合
@@ -255,10 +274,15 @@ public class InventoryScript : MonoBehaviour
         }
 
         //ホバースロットを無効に
-        HoverSlot.SetActive(false);
+        hoverSlot.SetActive(false);
         hoverSlotScript.ResetSlot(false);
     }
 
+    /// <summary>
+    /// クリック時イベントハンドラー
+    /// </summary>
+    /// <param name="data">イベント情報</param>
+    /// <param name="slot">スロット情報</param>
     public void OnPinterClickDelegate(PointerEventData data, SlotData slot)
     {
         //右クリック以外受け付けない

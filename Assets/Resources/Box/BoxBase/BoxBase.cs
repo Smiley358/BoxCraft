@@ -8,17 +8,17 @@ using UnityEngine;
 /// </summary>
 public abstract class BoxBase : MonoBehaviour
 {
-    //回転可能かどうか
-    protected bool CanRotate;
-    //アイテムアイコン
-    public Sprite ItemIcon;
     //アイテムデータ
     public InventoryItem ItemData { get; protected set; } = new InventoryItem();
+    //回転可能かどうか
+    protected bool canRotate;
+    //アイテムアイコン
+    [SerializeField] private Sprite itemIcon;
 
-    private void Awake()
+    void Awake()
     {
         ItemData.ItemName = gameObject.name.Replace("(Clone)", "");
-        ItemData.ItemIcon = ItemIcon;
+        ItemData.ItemIcon = itemIcon;
 
         ItemData.SelectDelegate = (SlotScript slot) =>
         {
@@ -26,7 +26,6 @@ public abstract class BoxBase : MonoBehaviour
             string path = "Box/" + ItemData.ItemName + "/" + ItemData.ItemName;
             boxSpawnerScript.Box = Resources.Load(path) as GameObject;
             boxSpawnerScript.PredictionBoxUpdate();
-            boxSpawnerScript.selectSlot = slot;
         };
 
         ItemData.DeselectDelegate = (SlotScript slot) =>
@@ -34,7 +33,6 @@ public abstract class BoxBase : MonoBehaviour
             BoxSpawnerScript boxSpawnerScript = GameObject.Find("BoxSpawner")?.GetComponent<BoxSpawnerScript>();
             boxSpawnerScript.Box = null;
             boxSpawnerScript.PredictionBoxUpdate();
-            boxSpawnerScript.selectSlot = null;
         };
 
         ItemData.UseDelegate = () => true;
@@ -44,7 +42,6 @@ public abstract class BoxBase : MonoBehaviour
             BoxSpawnerScript boxSpawnerScript = GameObject.Find("BoxSpawner")?.GetComponent<BoxSpawnerScript>();
             boxSpawnerScript.Box = null;
             boxSpawnerScript.PredictionBoxUpdate();
-            boxSpawnerScript.selectSlot = null;
         };
     }
 
@@ -53,7 +50,7 @@ public abstract class BoxBase : MonoBehaviour
     /// </summary>
     public void Rotate()
     {
-        if (!CanRotate) return;
+        if (!canRotate) return;
 
         transform.Rotate(new Vector3(0, 90, 0));
     }

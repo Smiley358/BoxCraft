@@ -4,27 +4,27 @@ using UnityEngine;
 
 public class ItemShortcutScript : MonoBehaviour
 {   
+    //選択中のスロット
+    public static int SelectIndex = UnselectIndex;
+    //非選択中のインデックス
+    public static readonly int UnselectIndex = -1;
     //キー割り当て用インデックスリスト
     public static readonly int[] IndexList = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
+
     //現在の割り当て状況
     private int nowIndex = 0;
 
-    //選択中のスロット
-    public static int SelectIndex = UNSELECT_INDEX;
-    //非選択中のインデックス
-    public static readonly int UNSELECT_INDEX = -1;
-
+    //スロット
+    private Dictionary<int, ItemShortcutSlotData> itemShortcutSlots = new Dictionary<int, ItemShortcutSlotData>(IndexList.Length);
     //ショートカットの移動コンポーネント
     private RectTransform itemShortcutRect;
     //ショートカットのサイズ
     private Vector2 itemShortcutSize;
     //アイテムショートカット用スロットのprefab
-    public GameObject ItemShortcutSlotPrefab;
+    [SerializeField] private GameObject itemShortcutSlotPrefab;
     //スロット間のパディング
-    public Vector2 slotPadding;
+    [SerializeField] private Vector2 slotPadding;
 
-    //スロット
-    public Dictionary<int, ItemShortcutSlotData> itemShortcutSlots { get; private set; } = new Dictionary<int, ItemShortcutSlotData>(IndexList.Length);
 
     void Start()
     {
@@ -45,7 +45,7 @@ public class ItemShortcutScript : MonoBehaviour
             if (SelectIndex != -1)
             {
                 //スロットを選択
-                SlotScript.SelectSlot(itemShortcutSlots[IndexList[SelectIndex]].ItemShortcutSlotScript.slotData);
+                SlotScript.SelectSlot(itemShortcutSlots[IndexList[SelectIndex]].ItemShortcutSlotScript.SlotData);
             }
             else
             {
@@ -76,7 +76,7 @@ public class ItemShortcutScript : MonoBehaviour
         //ショートカットのトランスフォームコンポーネント取得
         itemShortcutRect = GetComponent<RectTransform>();
         //スロットの大きさはUnityエディターの物を使用する
-        float itemShortcutSlotSize = ItemShortcutSlotPrefab.GetComponent<RectTransform>().rect.width;
+        float itemShortcutSlotSize = itemShortcutSlotPrefab.GetComponent<RectTransform>().rect.width;
         //ショートカットのサイズを計算
         itemShortcutSize.x = itemShortCutSlots * (itemShortcutSlotSize + slotPadding.x) + slotPadding.x;
         itemShortcutSize.y = itemShortcutSlotSize + slotPadding.y * 2;
@@ -87,7 +87,7 @@ public class ItemShortcutScript : MonoBehaviour
         for (int x = 0; x < itemShortCutSlots; x++)
         {
             //スロットの生成
-            ItemShortcutSlotData newSlot = ItemShortcutSlotScript.Create(ItemShortcutSlotPrefab, gameObject, IndexList, nowIndex);
+            ItemShortcutSlotData newSlot = ItemShortcutSlotScript.Create(itemShortcutSlotPrefab, IndexList, nowIndex);
             if (newSlot == null)
             {
                 Debug.Log("Item Shortcut Initialize Failed");

@@ -3,7 +3,8 @@ guid: a6b5d7fb7444d2648b4b9d0fc8865ec0
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - ItemShortcutSlotPrefab: {fileID: 1037033465437423578, guid: cddd1db2d211b8d49ae45ae07a1e7ff3, type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

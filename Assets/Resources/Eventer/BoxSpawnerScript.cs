@@ -4,42 +4,31 @@ using UnityEngine;
 
 public class BoxSpawnerScript : MonoBehaviour
 {
-    //アイテムのレイヤー
-    private const int ItemLayer = 6;
-
-    //画面中央の座標
-    private Vector2 displayCenter;
-
-    // ボックスを設置する位置
-    private Vector3 boxSpawnPos;
-
     //ボックスのprefab
     public GameObject Box;
 
-    //設置予測用BOX
-    public GameObject PredictionBox;
+    //画面中央の座標
+    private Vector2 displayCenter;
+    // ボックスを設置する位置
+    private Vector3 boxSpawnPos;
+
+
     //設置予測用BOXのメッシュレンダラー
     private MeshRenderer predictionBoxMeshRenderer;
+    //設置予測用BOX
+    [SerializeField] private GameObject predictionBox;
     //設置予測用BOXの制御スクリプト
-    private PredictionBoxScript predictionBoxScript;
-
-    //インベントリ
-    public GameObject Inventory;
-    //選択中のスロット
-    public SlotScript selectSlot;
-
+    [SerializeField] private PredictionBoxScript predictionBoxScript;
 
     void Start()
     {
         //画面中央の座標
         displayCenter = new Vector2(Screen.width / 2, Screen.height / 2);
 
-        //設置予測BOXの非活性化
-        PredictionBox.SetActive(false);
         //設置予測BOXのレンダー取得
-        predictionBoxMeshRenderer = PredictionBox.GetComponent<MeshRenderer>();
-        //設置予測BOXの制御スクリプト取得
-        predictionBoxScript = PredictionBox.GetComponent<PredictionBoxScript>();
+        predictionBoxMeshRenderer = predictionBox.GetComponent<MeshRenderer>();
+        //設置予測BOXの非活性化
+        predictionBox.SetActive(false);
 
         //接地予測BOXを更新
         PredictionBoxUpdate();
@@ -65,14 +54,14 @@ public class BoxSpawnerScript : MonoBehaviour
         LayerMask layerMask = LayerMask.GetMask("Box");
 
         //レイを飛ばす
-        if (!(InventoryScript.InventoryScriptInstance.IsActiveInventory) && Physics.Raycast(ray, out raycastHit, 10.0f, layerMask))
+        if (!(InventoryScript.Instance.IsActiveInventory) && Physics.Raycast(ray, out raycastHit, 10.0f, layerMask))
         {
             //レイが当たった面の法線方向にボックスを生成する
             boxSpawnPos = raycastHit.normal + raycastHit.collider.transform.position;
 
             //BOXの設置予測活性化
-            PredictionBox.SetActive(true);
-            PredictionBox.transform.position = boxSpawnPos;
+            predictionBox.SetActive(true);
+            predictionBox.transform.position = boxSpawnPos;
 
             //BOXの回転
             if (Input.GetKeyDown(KeyCode.R))
@@ -90,7 +79,7 @@ public class BoxSpawnerScript : MonoBehaviour
                     GameObject madeBox = Instantiate(Box, boxSpawnPos, predictionBoxScript.GetRotate());
                     madeBox.name = Box.name;
                     //設置した
-                    selectSlot?.UseItem();
+                    SlotScript.selectSlotData?.SlotScript?.UseItem();
                 }
             }
             if (Input.GetMouseButtonDown(0))
@@ -106,10 +95,13 @@ public class BoxSpawnerScript : MonoBehaviour
         else
         {
             //BOXの設置予測非活性化
-            PredictionBox.SetActive(false);
+            predictionBox.SetActive(false);
         }
     }
 
+    /// <summary>
+    /// 設置予測BOXを最新の状態へ更新
+    /// </summary>
     public void PredictionBoxUpdate()
     {
         predictionBoxScript.AttachPrefab(Box);

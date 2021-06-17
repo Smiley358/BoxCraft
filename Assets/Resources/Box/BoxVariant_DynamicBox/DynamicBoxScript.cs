@@ -7,6 +7,6 @@ public class DynamicBoxScript : BoxBase
     // Start is called before the first frame update
     void Start()
     {
-        CanRotate = true;
+        canRotate = true;
     }
 }

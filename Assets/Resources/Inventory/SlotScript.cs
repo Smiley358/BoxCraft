@@ -40,7 +40,16 @@ public class SlotData
 
 public class SlotScript : MonoBehaviour
 {
-    public static SlotData Create(GameObject prefab, GameObject inventory)
+    //選択中のスロット
+    public static SlotData selectSlotData { get; private set; }
+
+    /// <summary>
+    /// スロットの作成と初期設定の簡略化
+    /// </summary>
+    /// <param name="prefab">作成するprefab</param>
+    /// <param name="inventory"></param>
+    /// <returns></returns>
+    public static SlotData Create(GameObject prefab)
     {
         //スロットの生成
         GameObject newSlot = Instantiate(prefab);
@@ -48,9 +57,16 @@ public class SlotScript : MonoBehaviour
         SlotScript slotScript = newSlot.GetComponent<SlotScript>();
         //イベントハンドラーの設定
         slotScript.PrepareEventTrigger();
-        slotScript.slotData = new SlotData(newSlot, slotScript);
-        return slotScript.slotData;
+        slotScript.SlotData = new SlotData(newSlot, slotScript);
+        return slotScript.SlotData;
     }
+
+    /// <summary>
+    /// スロットを選択する
+    /// 既に選択されているものがある場合選択解除デリゲートを実行する
+    /// </summary>
+    /// <param name="slotData">次に選択するスロットデータ。
+    /// nullを指定した場合、現在選択されているスロットを解除する。</param>
     public static void SelectSlot(SlotData slotData)
     {
         if (selectSlotData != null)
@@ -63,6 +79,11 @@ public class SlotScript : MonoBehaviour
         selectSlotData = slotData;
     }
 
+    /// <summary>
+    /// 指定されたスロットが選択されていた場合スロットの選択状態を解除
+    /// </summary>
+    /// <param name="slotData">選択解除したいスロット。
+    /// 現在選択されているものでない場合何も行わない</param>
     public static void DeselectSlot(SlotData slotData)
     {
         if (slotData != selectSlotData) return;
@@ -72,44 +93,36 @@ public class SlotScript : MonoBehaviour
         selectSlotData = null;
     }
 
-    [SerializeField]
-    //スタック表示/管理スクリプト
-    protected StackScript stackScript;
-    //アイテムデータ
-    public InventoryItem Item { get; protected set; } = null;
-    //アイテムアイコン表示コンポーネント
-    public Image ItemIcon { get; protected set; }
-    //スロットのアイコン
-    protected Image SlotIcon;
 
-    //選択中のスロット
-    public static SlotData selectSlotData { get; private set; }
+
+    //アイテムデータ
+    public InventoryItem Item { get; set; } = null;
     //インベントリーで管理しているスロットデータクラス
-    public SlotData slotData;
+    public SlotData SlotData { get; protected set; }
+    //アイテムアイコン表示コンポーネント
+    protected Image itemIcon;
+    //スロットのアイコン
+    protected Image slotIcon;
+    //スタック表示/管理スクリプト
+    [SerializeField] protected StackScript stackScript;
 
     protected void Start()
     {
-        //スタック管理クラスの取得
-        stackScript = transform.Find("Stacks")?.GetComponent<StackScript>();
-        if (stackScript == null)
-        {
-            Debug.Log("スロットの初期化に失敗");
-        }
         //アイコン表示コンポーネントを取得
-        ItemIcon = transform.Find("ItemIcon")?.GetComponent<Image>();
-        if (ItemIcon == null)
+        itemIcon = transform.Find("ItemIcon")?.GetComponent<Image>();
+        if (itemIcon == null)
         {
             Debug.Log("スロットの初期化に失敗");
         }
-        SlotIcon = GetComponent<Image>();
-        if (SlotIcon == null)
+        slotIcon = GetComponent<Image>();
+        if (slotIcon == null)
         {
             Debug.Log("スロットの初期化に失敗");
         }
     }
 
     /// <summary>
-    /// 
+    /// イベントハンドラーの設定
     /// </summary>
     public void PrepareEventTrigger()
     {
@@ -119,25 +132,25 @@ public class SlotScript : MonoBehaviour
         //ドラッグ中イベント
         EventTrigger.Entry entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.Drag;
-        entry.callback.AddListener((data) => { InventoryScript.InventoryScriptInstance.OnDragDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
+        entry.callback.AddListener((data) => { InventoryScript.Instance.OnDragDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
         trigger.triggers.Add(entry);
 
         //ドロップイベント
         entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.Drop;
-        entry.callback.AddListener((data) => { InventoryScript.InventoryScriptInstance.OnDropDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
+        entry.callback.AddListener((data) => { InventoryScript.Instance.OnDropDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
         trigger.triggers.Add(entry);
 
         //ドラッグ開始イベント
         entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.BeginDrag;
-        entry.callback.AddListener((data) => { InventoryScript.InventoryScriptInstance.OnBeginDragDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
+        entry.callback.AddListener((data) => { InventoryScript.Instance.OnBeginDragDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
         trigger.triggers.Add(entry);
 
         //クリックイベント
         entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.PointerClick;
-        entry.callback.AddListener((data) => { InventoryScript.InventoryScriptInstance.OnPinterClickDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
+        entry.callback.AddListener((data) => { InventoryScript.Instance.OnPinterClickDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
         trigger.triggers.Add(entry);
     }
 
@@ -147,7 +160,7 @@ public class SlotScript : MonoBehaviour
     protected virtual void Select()
     {
         //アイコンを選択中に
-        SlotIcon.sprite = InventoryScript.InventoryScriptInstance.SelectSprite;
+        slotIcon.sprite = InventoryScript.Instance.SelectSprite;
         //選択時のデリゲートを実行
         Item?.SelectDelegate?.Invoke(this);
     }
@@ -158,7 +171,7 @@ public class SlotScript : MonoBehaviour
     protected virtual void Deselect()
     {
         //アイコンを非選択中に
-        SlotIcon.sprite = InventoryScript.InventoryScriptInstance.UnselectSprite;
+        slotIcon.sprite = InventoryScript.Instance.UnselectSprite;
         //選択解除時のデリゲートを実行
         Item?.DeselectDelegate?.Invoke(this);
     }
@@ -179,10 +192,10 @@ public class SlotScript : MonoBehaviour
         if (isUsed)
         {
             //アイテム数を減らす
-            stackScript.itemCount--;
+            stackScript.ItemCount--;
             
             //使用できる数がない
-            if (stackScript.itemCount <= 0)
+            if (stackScript.ItemCount <= 0)
             {
                 //スロットをリセット
                 ResetSlot();
@@ -205,11 +218,11 @@ public class SlotScript : MonoBehaviour
         }
 
         //アイテムがいっぱいなら
-        if(Item.MaxStackSize <= stackScript.itemCount)
+        if(Item.MaxStackSize <= stackScript.ItemCount)
         {
             return 0;
         }
-        return Item.MaxStackSize - stackScript.itemCount;
+        return Item.MaxStackSize - stackScript.ItemCount;
     }
 
     /// <summary>
@@ -230,13 +243,13 @@ public class SlotScript : MonoBehaviour
         if (!CanAddItem(addItemData.ItemName)) return 0;
 
         //追加
-        stackScript.itemCount += count;
-        int addedItemOverFlowCount = Item.MaxStackSize - stackScript.itemCount;
+        stackScript.ItemCount += count;
+        int addedItemOverFlowCount = Item.MaxStackSize - stackScript.ItemCount;
         //スタックがオーバーフローしていたら
         if(addedItemOverFlowCount < 0)
         {
             //最大数にする
-            stackScript.itemCount = Item.MaxStackSize;
+            stackScript.ItemCount = Item.MaxStackSize;
             //追加でなかった分の数を返す
             return System.Math.Abs(addedItemOverFlowCount);
         }
@@ -267,8 +280,8 @@ public class SlotScript : MonoBehaviour
     void ItemSet(InventoryItem item)
     {
         Item = item;
-        ItemIcon.sprite = Item.ItemIcon;
-        ItemIcon.enabled = true;
+        itemIcon.sprite = Item.ItemIcon;
+        itemIcon.enabled = true;
     }
 
     /// <summary>
@@ -277,7 +290,7 @@ public class SlotScript : MonoBehaviour
     /// <returns></returns>
     public int GetStackCount()
     {
-        return stackScript.itemCount;
+        return stackScript.ItemCount;
     }
 
     /// <summary>
@@ -301,20 +314,20 @@ public class SlotScript : MonoBehaviour
         if ((Item != null) && isDelegateExecute) 
         {
             //選択中なら解除
-            DeselectSlot(slotData);
+            DeselectSlot(SlotData);
         }
         //アイテム情報削除
         Item = null;
         //アイテムアイコン初期化
-        if (ItemIcon != null)
+        if (itemIcon != null)
         {
-            ItemIcon.enabled = false;
-            ItemIcon.sprite = null;
+            itemIcon.enabled = false;
+            itemIcon.sprite = null;
         }
         //スタック情報初期化
         if (stackScript != null)
         {
-            stackScript.itemCount = 0;
+            stackScript.ItemCount = 0;
         }
     }
 

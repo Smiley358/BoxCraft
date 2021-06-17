@@ -5,12 +5,10 @@ using UnityEngine;
 public class PredictionBoxScript : MonoBehaviour
 {
     //設置可能時マテリアル
-    public Material CanCreatableMaterial;
+    [SerializeField] private Material canCreatableMaterial;
     //設置不可能時マテリアル
-    public Material CanNotCreatableMaterial;
+    [SerializeField] private Material canNotCreatableMaterial;
 
-    //ボックススポナー
-    public GameObject BoxSpawner;
     //表示用BOX
     private GameObject renderBox;
     //表示用BOX
@@ -24,6 +22,27 @@ public class PredictionBoxScript : MonoBehaviour
     void Start()
     {
         IsCreatable = true;
+    }
+
+    void Update()
+    {
+        if (!IsValid()) return;
+
+        if (renderBoxMaterial == null)
+        {
+            renderBoxMaterial = renderBox.GetComponent<MeshRenderer>().material;
+            if (renderBoxMaterial == null) return;
+        }
+
+        //BOXの設置予測可否表示
+        if (IsCreatable)
+        {
+            renderBox.GetComponent<MeshRenderer>().material.color = canCreatableMaterial.color;
+        }
+        else
+        {
+            renderBox.GetComponent<MeshRenderer>().material.color = canNotCreatableMaterial.color;
+        }
     }
 
     public void OnTriggerEnter(UnityEngine.Collider other)
@@ -49,27 +68,10 @@ public class PredictionBoxScript : MonoBehaviour
         IsCreatable = false;
     }
 
-    private void Update()
-    {
-        if (!IsValid()) return;
-
-        if (renderBoxMaterial == null)
-        {
-            renderBoxMaterial = renderBox.GetComponent<MeshRenderer>().material;
-            if (renderBoxMaterial == null) return;
-        }
-
-        //BOXの設置予測可否表示
-        if (IsCreatable)
-        {
-            renderBox.GetComponent<MeshRenderer>().material.color = CanCreatableMaterial.color;
-        }
-        else
-        {
-            renderBox.GetComponent<MeshRenderer>().material.color = CanNotCreatableMaterial.color;
-        }
-    }
-
+    /// <summary>
+    /// 使用可能かどうか
+    /// </summary>
+    /// <returns></returns>
     public bool IsValid()
     {
         return (renderBox != null) && (renderBoxScript != null);
@@ -128,6 +130,7 @@ public class PredictionBoxScript : MonoBehaviour
         renderBoxMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
         renderBoxMaterial.renderQueue = 3000;
     }
+
     /// <summary>
     /// 表示用のBOXのPrefabをデタッチする
     /// </summary>

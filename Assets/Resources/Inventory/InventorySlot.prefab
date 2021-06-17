@@ -184,8 +184,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 986ef6e4de2aa974a8cc18e4811819da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stackScript: {fileID: 0}
-  InventoryScript: {fileID: 0}
+  stackScript: {fileID: 718454776662615145}
 --- !u!114 &-1281854260098191989
 MonoBehaviour:
   m_ObjectHideFlags: 0

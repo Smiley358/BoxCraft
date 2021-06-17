@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-//アイテムショートカットのスロット保持用
+/// <summary>
+///アイテムショートカットのスロット保持用
+/// </summary>
 public class ItemShortcutSlotData
 {
     public GameObject Slot;
@@ -28,8 +30,14 @@ public class ItemShortcutSlotData
 
 public class ItemShortcutSlotScript : SlotScript
 {
-    //ショートカット用スロットの作成と割り当て
-    public static ItemShortcutSlotData Create(GameObject prefab, GameObject inventory, int[] IndexList, int index)
+    /// <summary>
+    ///ショートカット用スロットの作成と割り当て
+    /// </summary>
+    /// <param name="prefab">作成するprefab</param>
+    /// <param name="IndexList">作成するためのインデックスリスト</param>
+    /// <param name="index">現在のインデックス</param>
+    /// <returns></returns>
+    public static ItemShortcutSlotData Create(GameObject prefab, int[] IndexList, int index)
     {
         //キー割り当てできないので作らない
         if (index > IndexList.Length - 1) return null;
@@ -37,9 +45,9 @@ public class ItemShortcutSlotScript : SlotScript
         //ショートカットスロット生成
         GameObject slot = Instantiate(prefab);
         ItemShortcutSlotScript itemShortcutSlotScript = slot.GetComponent<ItemShortcutSlotScript>();
-        itemShortcutSlotScript.slotData = new SlotData(slot, itemShortcutSlotScript);
+        itemShortcutSlotScript.SlotData = new SlotData(slot, itemShortcutSlotScript);
         //イベントハンドラー初期設定
-        itemShortcutSlotScript.slotData.SlotScript.PrepareEventTrigger();
+        itemShortcutSlotScript.SlotData.SlotScript.PrepareEventTrigger();
 
 
         //インデックス割り当て
@@ -48,7 +56,7 @@ public class ItemShortcutSlotScript : SlotScript
         Text text = slot.transform.Find("Index")?.GetComponent<Text>();
         text.text = itemShortcutSlotScript.Index.ToString();
 
-        return new ItemShortcutSlotData(slot, itemShortcutSlotScript.slotData.SlotScript, itemShortcutSlotScript);
+        return new ItemShortcutSlotData(slot, itemShortcutSlotScript.SlotData.SlotScript, itemShortcutSlotScript);
     }
 
 
@@ -56,30 +64,9 @@ public class ItemShortcutSlotScript : SlotScript
     //キー割り当て用インデックス
     public int Index { get; private set; } = -1;
 
-    void Awake()
-    {
-        //スタック管理クラスの取得
-        stackScript = transform.Find("Stacks")?.GetComponent<StackScript>();
-        if (stackScript == null)
-        {
-            Debug.Log("スロットの初期化に失敗");
-        }
-        //アイコン表示コンポーネントを取得
-        ItemIcon = transform.Find("ItemIcon")?.GetComponent<Image>();
-        if (ItemIcon == null)
-        {
-            Debug.Log("スロットの初期化に失敗");
-        }
-        SlotIcon = GetComponent<Image>();
-        if (SlotIcon == null)
-        {
-            Debug.Log("スロットの初期化に失敗");
-        }
-    }
-
     void Update()
     {
-        if (SlotIcon == null)
+        if (slotIcon == null)
         {
             Debug.Log("スロットの初期化に失敗");
         }
@@ -93,32 +80,32 @@ public class ItemShortcutSlotScript : SlotScript
     //選択
     public void SlotEnter()
     {
-        if (selectSlotData != slotData)
+        if (selectSlotData != SlotData)
         {
             //即時使用か選択か
-            if (slotData.SlotScript.Item?.IsImmediateUse == true)
+            if (SlotData.SlotScript.Item?.IsImmediateUse == true)
             {
                 //アイテム使用
-                InventoryScript.InventoryScriptInstance.UseItem(slotData);
+                InventoryScript.Instance.UseItem(SlotData);
             }
             else
             {
                 //アイテム選択
-                SelectSlot(slotData);
+                SelectSlot(SlotData);
                 ItemShortcutScript.SelectIndex = Array.IndexOf(ItemShortcutScript.IndexList, Index);
             }
         }
         else
         {
             SlotExit();
-            ItemShortcutScript.SelectIndex = ItemShortcutScript.UNSELECT_INDEX;
+            ItemShortcutScript.SelectIndex = ItemShortcutScript.UnselectIndex;
         }
     }
     //選択終わり
     public void SlotExit()
     {
         //アイテム選択解除
-        DeselectSlot(slotData);
+        DeselectSlot(SlotData);
     }
 
     /// <summary>

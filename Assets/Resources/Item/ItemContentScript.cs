@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class ItemContentScript : MonoBehaviour
@@ -9,7 +7,7 @@ public class ItemContentScript : MonoBehaviour
     //¶¬‚³‚ê‚½ŠÔ
     private float startTime;
     //Œ‹‡ˆ—ó‹µ
-    public bool OnJoin { get; set; }
+    private bool OnJoin;
 
     void Start()
     {

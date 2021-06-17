@@ -1,110 +1,113 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class ItemScript : MonoBehaviour
 {
-    //ƒAƒCƒeƒ€‚ÌƒvƒŒƒnƒu
+    //ã‚¢ã‚¤ãƒ†ãƒ ã®prefab
     static public GameObject ItemPrefab;
+    //ã‚¢ã‚¤ãƒ†ãƒ ã®ä¸­èº«ã®prefab
     static public GameObject ItemContentPrefab;
-    public enum ChildIndex
+
+    private static Action InitializeOnceDelegate = () =>
     {
-        Physics,
-        Content
-    }
+        ItemPrefab = Resources.Load("Item/Item") as GameObject;
+        ItemContentPrefab = Resources.Load("Item/ItemContent") as GameObject;
+        InitializeOnceDelegate = null;
+    };
 
     public static bool Create(GameObject itemObject)
     {
-        if (ItemPrefab == null)
-        {
-            ItemPrefab = Resources.Load("Item/Item") as GameObject;
-        }
-        if (ItemContentPrefab == null)
-        {
-            ItemContentPrefab = Resources.Load("Item/ItemContent") as GameObject;
-        }
-        //ƒAƒCƒeƒ€‰»‚·‚éBOX‚ÌŠÇ—ƒNƒ‰ƒX‚ğæ“¾
+        InitializeOnceDelegate?.Invoke();
+
+        //ã‚¢ã‚¤ãƒ†ãƒ åŒ–ã™ã‚‹BOXã®ç®¡ç†ã‚¯ãƒ©ã‚¹ã‚’å–å¾—
         BoxBase box = itemObject.GetComponent<BoxBase>();
-        //BoxŠÇ—ƒNƒ‰ƒX‚ğ‚Á‚Ä‚¢‚È‚¯‚ê‚ÎƒAƒCƒeƒ€ƒf[ƒ^‚à‚È‚¢‚Ì‚Å¶¬‚µ‚È‚¢
+        //Boxç®¡ç†ã‚¯ãƒ©ã‚¹ã‚’æŒã£ã¦ã„ãªã‘ã‚Œã°ã‚¢ã‚¤ãƒ†ãƒ ãƒ‡ãƒ¼ã‚¿ã‚‚ãªã„ã®ã§ç”Ÿæˆã—ãªã„
         if (box == null)
         {
             return false;
         }
-        //ƒAƒCƒeƒ€ƒf[ƒ^‚ğ¶¬‚µ‚ÄƒZƒbƒg
+        //ã‚¢ã‚¤ãƒ†ãƒ ãƒ‡ãƒ¼ã‚¿ã‚’ç”Ÿæˆã—ã¦ã‚»ãƒƒãƒˆ
         InventoryItem itemData = new InventoryItem(box.ItemData);
-        //ƒAƒCƒeƒ€ƒf[ƒ^‚ª‚È‚©‚Á‚½‚çƒAƒCƒeƒ€¶¬‚ğs‚í‚È‚¢
-        if (itemData== null)
+        //ã‚¢ã‚¤ãƒ†ãƒ ãƒ‡ãƒ¼ã‚¿ãŒãªã‹ã£ãŸã‚‰ã‚¢ã‚¤ãƒ†ãƒ ç”Ÿæˆã‚’è¡Œã‚ãªã„
+        if (itemData == null)
         {
             return false;
         }
 
-        //ƒAƒCƒeƒ€‚ÌƒCƒ“ƒXƒ^ƒ“ƒX‰»
+        //ã‚¢ã‚¤ãƒ†ãƒ ã®ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹åŒ–
         GameObject madeObject = Instantiate(ItemPrefab);
         //madeObject.transform.SetPositionAndRotation(itemObject.transform.position, Quaternion.Euler(Vector3.zero));
         madeObject.transform.position = itemObject.transform.position;
         //madeObject.transform.localPosition = Vector3.zero;
         madeObject.name = "Item_" + itemData.ItemName;
 
-        //ƒAƒCƒeƒ€ŠÇ—ƒNƒ‰ƒX‚Ìæ“¾
+        //ã‚¢ã‚¤ãƒ†ãƒ ç®¡ç†ã‚¯ãƒ©ã‚¹ã®å–å¾—
         ItemScript itemScript = madeObject.GetComponent<ItemScript>();
-        //ƒAƒCƒeƒ€ƒf[ƒ^‚ÌŠi”[
+        //ã‚¢ã‚¤ãƒ†ãƒ ãƒ‡ãƒ¼ã‚¿ã®æ ¼ç´
         itemScript.ItemData = itemData;
 
-        //ƒAƒCƒeƒ€‚Ì’†g‚ğƒCƒ“ƒXƒ^ƒ“ƒX‰»
+        //ã‚¢ã‚¤ãƒ†ãƒ ã®ä¸­èº«ã‚’ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹åŒ–
         GameObject madeContent = Instantiate(ItemContentPrefab, madeObject.transform);
-        //–{—ˆ‚Ì–¼‘O‚É•ÏXi"(Clone)"‚Æ‚ä‚¤Ú”ö«‚ğÁ‚·j
+        //æœ¬æ¥ã®åå‰ã«å¤‰æ›´ï¼ˆ"(Clone)"ã¨ã‚†ã†æ¥å°¾è¾ã‚’æ¶ˆã™ï¼‰
         madeContent.name = ItemContentPrefab.name;
-        //ƒƒbƒVƒ…‚Ìİ’è
+        //ãƒ¡ãƒƒã‚·ãƒ¥ã®è¨­å®š
         madeContent.GetComponent<MeshFilter>().mesh = itemObject.GetComponent<MeshFilter>().mesh;
-        //ƒ}ƒeƒŠƒAƒ‹‚Ìİ’è
+        //ãƒãƒ†ãƒªã‚¢ãƒ«ã®è¨­å®š
         madeContent.GetComponent<MeshRenderer>().material = itemObject.GetComponent<MeshRenderer>().material;
         return true;
     }
 
 
 
-    public GameObject content { get; private set; }
-    private float Speed = 2.5f;
-    private Rigidbody ownRigidbody;
+    //ã‚¢ã‚¤ãƒ†ãƒ ãƒ‡ãƒ¼ã‚¿
+    public InventoryItem ItemData { get; private set; }
+    //ä¸­èº«
+    public GameObject Content { get; private set; }
+    //ä¸­èº«ã®æ•°
     public int contentCount { get; private set; }
+    //ç§»å‹•é€Ÿåº¦
+    private float Speed = 2.5f;
+    //ãƒªã‚¸ãƒƒãƒ‰ãƒœãƒ‡ã‚£
+    private Rigidbody ownRigidbody;
+    //ç§»å‹•ã¹ã‚¯ãƒˆãƒ«
     private Vector3 moveVelocity;
 
-    //ƒAƒCƒeƒ€ƒf[ƒ^
-    public InventoryItem ItemData { get; private set; }
 
-    private void Start()
+    void Start()
     {
-        //qƒIƒuƒWƒFƒNƒg‚ğ•Û‚µ‚Ä‚¨‚­
-        if (content == null)
+        //å­ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ä¿æŒã—ã¦ãŠã
+        if (Content == null)
         {
-            content = transform.GetChild((int)ChildIndex.Content)?.gameObject;
-            //Ši”[‚³‚ê‚Ä‚¢‚½‚ç
-            if (content != null)
+            Content = transform.Find("ItemContent")?.gameObject;
+            //æ ¼ç´ã•ã‚Œã¦ã„ãŸã‚‰
+            if (Content != null)
             {
-                //ƒRƒ“ƒeƒ“ƒc”‚ğ‘‚â‚·
+                //ã‚³ãƒ³ãƒ†ãƒ³ãƒ„æ•°ã‚’å¢—ã‚„ã™
                 contentCount = 1;
             }
-            //‚È‚º‚©‹óƒAƒCƒeƒ€‚È‚Ì‚Å©–Å
+            //ãªãœã‹ç©ºã‚¢ã‚¤ãƒ†ãƒ ãªã®ã§è‡ªæ»…
             else
             {
                 Destroy(gameObject);
             }
         }
 
-        //ƒŠƒWƒbƒhƒ{ƒfƒB‚ğ•Û
+        //ãƒªã‚¸ãƒƒãƒ‰ãƒœãƒ‡ã‚£ã‚’ä¿æŒ
         ownRigidbody = GetComponent<Rigidbody>();
     }
 
     private void Update()
     {
-        //–{‘Ì‚ğ‰ñ“]‚³‚¹‚È‚¢
+        //æœ¬ä½“ã‚’å›è»¢ã•ã›ãªã„
         transform.rotation = Quaternion.Euler(Vector3.zero);
     }
 
-    private void FixedUpdate()
+    void FixedUpdate()
     {
-        //‹ß‚­‚ÌƒAƒCƒeƒ€‚Ö‹ß‚Ã‚­
-        //y²ˆÚ“®‚ÍRigidBody‚Ìd—Í‚ğg—p
+        //è¿‘ãã®ã‚¢ã‚¤ãƒ†ãƒ ã¸è¿‘ã¥ã
+        //yè»¸ç§»å‹•ã¯RigidBodyã®é‡åŠ›ã‚’ä½¿ç”¨
         moveVelocity.Scale(new Vector3(1, 0, 1));
         moveVelocity.y = ownRigidbody.velocity.y;
         ownRigidbody.velocity = moveVelocity;
@@ -113,37 +116,37 @@ public class ItemScript : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
-        //ƒAƒCƒeƒ€‚¶‚á‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+        //ã‚¢ã‚¤ãƒ†ãƒ ã˜ã‚ƒãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
         if (other.gameObject.tag != "Item") return;
-        //“¯‚¶ƒAƒCƒeƒ€‚¶‚á‚È‚¯‚ê‚Î‰½‚à‚µ‚È‚¢
+        //åŒã˜ã‚¢ã‚¤ãƒ†ãƒ ã˜ã‚ƒãªã‘ã‚Œã°ä½•ã‚‚ã—ãªã„
         if (other.name != name) return;
 
-        //•Ê‚ÌƒAƒCƒeƒ€‚Ö‚Ì•ûŒü
+        //åˆ¥ã®ã‚¢ã‚¤ãƒ†ãƒ ã¸ã®æ–¹å‘
         Vector3 targetVector = (other.transform.position - transform.position).normalized;
-        //Y²‚Í‰½‚à‚µ‚È‚¢
+        //Yè»¸ã¯ä½•ã‚‚ã—ãªã„
         //targetVector.Scale(new Vector3(1, 0, 1));
         //targetVector.y = ownRigidbody.velocity.y;
 
-        //ƒ^[ƒQƒbƒg‚ªŒ»İ‚Ìis•ûŒü‚Æ‘å‚«‚­ŠO‚ê‚éê‡ˆ—‚µ‚È‚¢
+        //ã‚¿ãƒ¼ã‚²ãƒƒãƒˆãŒç¾åœ¨ã®é€²è¡Œæ–¹å‘ã¨å¤§ããå¤–ã‚Œã‚‹å ´åˆå‡¦ç†ã—ãªã„
         if (Vector3.Angle(moveVelocity, targetVector) >= 90.0f) return;
-        //ˆÚ“®ƒxƒNƒgƒ‹‚ÌZo
+        //ç§»å‹•ãƒ™ã‚¯ãƒˆãƒ«ã®ç®—å‡º
         moveVelocity = (moveVelocity + (targetVector * Speed)).normalized * Speed;
     }
 
     /// <summary>
-    /// ƒAƒCƒeƒ€‚ğŒ‹‡iƒJƒEƒ“ƒg‚ğ‘‚â‚·j
+    /// ã‚¢ã‚¤ãƒ†ãƒ ã‚’çµåˆï¼ˆã‚«ã‚¦ãƒ³ãƒˆã‚’å¢—ã‚„ã™ï¼‰
     /// </summary>
-    /// <param name="count">Œ‹‡”</param>
+    /// <param name="count">çµåˆæ•°</param>
     public void JoinItem(int count)
     {
         contentCount += count;
     }
 
     /// <summary>
-    /// ƒAƒCƒeƒ€‚ğƒCƒ“ƒxƒ“ƒgƒŠ[‚É‚µ‚Ü‚¤iƒJƒEƒ“ƒg‚ğŒ¸‚ç‚·j
+    /// ã‚¢ã‚¤ãƒ†ãƒ ã‚’ã‚¤ãƒ³ãƒ™ãƒ³ãƒˆãƒªãƒ¼ã«ã—ã¾ã†ï¼ˆã‚«ã‚¦ãƒ³ãƒˆã‚’æ¸›ã‚‰ã™ï¼‰
     /// </summary>
-    /// <param name="count">‚µ‚Ü‚¤”</param>
-    /// <returns>‚µ‚Ü‚¦‚½”</returns>
+    /// <param name="count">ã—ã¾ã†æ•°</param>
+    /// <returns>ã—ã¾ãˆãŸæ•°</returns>
     public int StorageItem(int count)
     {
         if (count > contentCount)
@@ -152,7 +155,7 @@ public class ItemScript : MonoBehaviour
         }
         contentCount -= count;
 
-        //‹ó‚É‚È‚Á‚½‚ç”jŠü
+        //ç©ºã«ãªã£ãŸã‚‰ç ´æ£„
         if (contentCount <= 0)
         {
             Destroy(gameObject);

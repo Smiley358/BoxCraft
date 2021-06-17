@@ -3,7 +3,11 @@ guid: d02a9981b1e682441b3ad95001da6abd
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - SlotPrefab: {instanceID: 0}
+  - HoverSlot: {instanceID: 0}
+  - selectSprite: {fileID: 21300000, guid: c94dc0be61b1b414697644ab4a63e342, type: 3}
+  - unselectSprite: {fileID: 21300000, guid: 12d0a23df1f38f543bb8449570cd8b5e, type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

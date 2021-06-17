@@ -11,7 +11,8 @@ public class InventoryItem
     public Sprite ItemIcon;
     //アイテムの最大スタック数
     public int MaxStackSize = 10;
-    //右クリックで使用するか/選択状態死にするか
+    
+    //即時使用するか/選択状態にするか
     public bool IsImmediateUse { get; private set; }
 
     public InventoryItem(InventoryItem itemData)

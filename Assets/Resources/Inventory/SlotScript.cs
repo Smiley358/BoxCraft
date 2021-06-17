@@ -40,31 +40,52 @@ public class SlotData
 
 public class SlotScript : MonoBehaviour
 {
-    public static SlotData Create(GameObject prefab, GameObject inventory, InventoryScript inventoryScript)
+    public static SlotData Create(GameObject prefab, GameObject inventory)
     {
         //スロットの生成
         GameObject newSlot = Instantiate(prefab);
 
         SlotScript slotScript = newSlot.GetComponent<SlotScript>();
-        //インベントリーの登録
-        slotScript.InventoryScript = inventoryScript;
         //イベントハンドラーの設定
         slotScript.PrepareEventTrigger();
+        slotScript.slotData = new SlotData(newSlot, slotScript);
+        return slotScript.slotData;
+    }
+    public static void SelectSlot(SlotData slotData)
+    {
+        if (selectSlotData != null)
+        {
+            selectSlotData.SlotScript.Deselect();
+        }
+        //アイテム選択
+        slotData?.SlotScript.Select();
+        //選択中スロットをセット
+        selectSlotData = slotData;
+    }
 
-        return new SlotData(newSlot, slotScript);
+    public static void DeselectSlot(SlotData slotData)
+    {
+        if (slotData != selectSlotData) return;
+        //アイテム選択解除
+        slotData?.SlotScript.Deselect();
+        //選択中スロットをなくす
+        selectSlotData = null;
     }
 
     [SerializeField]
     //スタック表示/管理スクリプト
-    private StackScript stackScript;
+    protected StackScript stackScript;
     //アイテムデータ
     public InventoryItem Item { get; protected set; } = null;
     //アイテムアイコン表示コンポーネント
     public Image ItemIcon { get; protected set; }
-    //インベントリー管理クラス
-    public InventoryScript InventoryScript;
     //スロットのアイコン
     protected Image SlotIcon;
+
+    //選択中のスロット
+    public static SlotData selectSlotData { get; private set; }
+    //インベントリーで管理しているスロットデータクラス
+    public SlotData slotData;
 
     protected void Start()
     {
@@ -98,35 +119,35 @@ public class SlotScript : MonoBehaviour
         //ドラッグ中イベント
         EventTrigger.Entry entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.Drag;
-        entry.callback.AddListener((data) => { InventoryScript.OnDragDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
+        entry.callback.AddListener((data) => { InventoryScript.InventoryScriptInstance.OnDragDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
         trigger.triggers.Add(entry);
 
         //ドロップイベント
         entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.Drop;
-        entry.callback.AddListener((data) => { InventoryScript.OnDropDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
+        entry.callback.AddListener((data) => { InventoryScript.InventoryScriptInstance.OnDropDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
         trigger.triggers.Add(entry);
 
         //ドラッグ開始イベント
         entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.BeginDrag;
-        entry.callback.AddListener((data) => { InventoryScript.OnBeginDragDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
+        entry.callback.AddListener((data) => { InventoryScript.InventoryScriptInstance.OnBeginDragDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
         trigger.triggers.Add(entry);
 
         //クリックイベント
         entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.PointerClick;
-        entry.callback.AddListener((data) => { InventoryScript.OnPinterClickDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
+        entry.callback.AddListener((data) => { InventoryScript.InventoryScriptInstance.OnPinterClickDelegate((PointerEventData)data, (new SlotData(gameObject, this))); });
         trigger.triggers.Add(entry);
     }
 
     /// <summary>
     /// 選択状態に
     /// </summary>
-    public virtual void Select()
+    protected virtual void Select()
     {
         //アイコンを選択中に
-        SlotIcon.sprite = InventoryScript.SelectSprite;
+        SlotIcon.sprite = InventoryScript.InventoryScriptInstance.SelectSprite;
         //選択時のデリゲートを実行
         Item?.SelectDelegate?.Invoke(this);
     }
@@ -134,10 +155,10 @@ public class SlotScript : MonoBehaviour
     /// <summary>
     /// 選択状態解除
     /// </summary>
-    public virtual void Deselect()
+    protected virtual void Deselect()
     {
         //アイコンを非選択中に
-        SlotIcon.sprite = InventoryScript.UnselectSprite;
+        SlotIcon.sprite = InventoryScript.InventoryScriptInstance.UnselectSprite;
         //選択解除時のデリゲートを実行
         Item?.DeselectDelegate?.Invoke(this);
     }
@@ -279,8 +300,8 @@ public class SlotScript : MonoBehaviour
     {
         if ((Item != null) && isDelegateExecute) 
         {
-            //セレクト解除デリゲートを実行
-            Deselect();
+            //選択中なら解除
+            DeselectSlot(slotData);
         }
         //アイテム情報削除
         Item = null;

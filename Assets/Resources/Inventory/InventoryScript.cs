@@ -7,6 +7,8 @@ using System;
 using System.Threading;
 public class InventoryScript : MonoBehaviour
 {
+    //インベントリーのインスタンス
+    public static InventoryScript InventoryScriptInstance { get; private set; }
     //インベントリーの移動コンポーネント
     private RectTransform inventoryRect;
     //インベントリーのサイズ
@@ -32,8 +34,6 @@ public class InventoryScript : MonoBehaviour
     //ドラッグ元のスロット
     private SlotData dragSlotData;
 
-    //選択中のスロット
-    public SlotData selectSlotData;
     //選択中
     public Sprite SelectSprite;
     //非選択
@@ -45,13 +45,14 @@ public class InventoryScript : MonoBehaviour
 
     void Start()
     {
+        InventoryScriptInstance = this;
+
         //インベントリーのレイアウトを作る
         CreateLayout();
 
         //ホバー用のスロットの初期設定
         hoverSlotIconImage = HoverSlot.transform.Find("ItemIcon")?.GetComponent<Image>();
         hoverSlotScript = HoverSlot.GetComponent<SlotScript>();
-        hoverSlotScript.InventoryScript = this;
         //一番最下位へ（最前面に表示するため）
         HoverSlot.transform.SetAsLastSibling();
         //非活性化
@@ -177,7 +178,7 @@ public class InventoryScript : MonoBehaviour
         {
             for (int x = 0; x < columns; x++)
             {
-                SlotData slotData = SlotScript.Create(SlotPrefab, gameObject, this);
+                SlotData slotData = SlotScript.Create(SlotPrefab, gameObject);
                 //スロットのトランスフォームコンポーネントを取得
                 RectTransform slotRectTransform = slotData.Slot.GetComponent<RectTransform>();
                 //名前を変更
@@ -240,19 +241,14 @@ public class InventoryScript : MonoBehaviour
         {
             //ドロップ元のスロットにドロップ先スロットのデータを移す
             dragSlotData.SlotScript.Replace(slot.SlotScript);
-            //ドロップ元が選択中なら
-            if (dragSlotData == selectSlotData)
-            {
-                //選択解除
-                DeselectSlot(dragSlotData);
-            }
+            //ドロップ元が選択中なら選択解除
+            SlotScript.DeselectSlot(dragSlotData);
             //ドロップ先のスロットにドラッグ元(ホバースロット)スロットのデータを移す
             slot.SlotScript.Replace(hoverSlotScript);
             //ドロップ先が選択中なら
-            if(selectSlotData == slot)
+            if(SlotScript.selectSlotData == slot)
             {
-                slot.SlotScript.Select();
-                //SelectSlot(slot);
+                SlotScript.SelectSlot(slot);
             }
             //ドラッグ元データの保持を破棄
             dragSlotData = null;
@@ -278,33 +274,10 @@ public class InventoryScript : MonoBehaviour
         }
         else
         {
-            //同じスロットを右クリックした
-            if (slot == selectSlotData)
-            {
-                //アイテムスロット選択解除
-                DeselectSlot(slot);
-            }
-            else
-            {
-                //アイテムスロット選択
-                SelectSlot(slot);
-            }
+            //同じスロットなら選択解除
+            SlotScript.DeselectSlot(slot);
+            //アイテムスロット選択
+            SlotScript.SelectSlot(slot);
         }
-    }
-
-    public void SelectSlot(SlotData slotData)
-    {
-        //アイテム選択
-        slotData.SlotScript.Select();
-        //選択中スロットをセット
-        selectSlotData = slotData;
-    }
-
-    public void DeselectSlot(SlotData slotData)
-    {
-        //アイテム選択解除
-        slotData.SlotScript.Deselect();
-        //選択中スロットをなくす
-        selectSlotData = null;
     }
 }

@@ -25,8 +25,6 @@ public class BoxSpawnerScript : MonoBehaviour
 
     //インベントリ
     public GameObject Inventory;
-    //インベントリ管理クラス
-    public InventoryScript inventoryScript;
     //選択中のスロット
     public SlotScript selectSlot;
 
@@ -42,9 +40,6 @@ public class BoxSpawnerScript : MonoBehaviour
         predictionBoxMeshRenderer = PredictionBox.GetComponent<MeshRenderer>();
         //設置予測BOXの制御スクリプト取得
         predictionBoxScript = PredictionBox.GetComponent<PredictionBoxScript>();
-
-        //インベントリセット
-        inventoryScript = GameObject.Find("Inventory")?.GetComponent<InventoryScript>();
 
         //接地予測BOXを更新
         PredictionBoxUpdate();
@@ -70,7 +65,7 @@ public class BoxSpawnerScript : MonoBehaviour
         LayerMask layerMask = LayerMask.GetMask("Box");
 
         //レイを飛ばす
-        if (!(inventoryScript.IsActiveInventory) && Physics.Raycast(ray, out raycastHit, 10.0f, layerMask))
+        if (!(InventoryScript.InventoryScriptInstance.IsActiveInventory) && Physics.Raycast(ray, out raycastHit, 10.0f, layerMask))
         {
             //レイが当たった面の法線方向にボックスを生成する
             boxSpawnPos = raycastHit.normal + raycastHit.collider.transform.position;

@@ -23,18 +23,11 @@ public class ItemShortcutScript : MonoBehaviour
     //スロット間のパディング
     public Vector2 slotPadding;
 
-    //インベントリー
-    public GameObject Inventory;
-    //インベントリーの管理クラス
-    private InventoryScript inventoryScript;
-
     //スロット
     public Dictionary<int, ItemShortcutSlotData> itemShortcutSlots { get; private set; } = new Dictionary<int, ItemShortcutSlotData>(IndexList.Length);
 
     void Start()
     {
-        //インベントリのスクリプトを保持
-        inventoryScript = Inventory.GetComponent<InventoryScript>();
         //アイテムショートカットを作る
         CreateLayout();
     }
@@ -47,17 +40,17 @@ public class ItemShortcutScript : MonoBehaviour
         //マウスホイールまわしたとき
         if (indexShift != 0)
         {
-            if (SelectIndex != -1)
-            {
-                //まず今のスロットの選択解除
-                itemShortcutSlots[IndexList[SelectIndex]].ItemShortcutSlotScript?.SlotExit();
-            }
             //-1~9までが入るように計算
             SelectIndex = (IndexList.Length + 1 + SelectIndex + indexShift + 1) % (IndexList.Length + 1) - 1;
             if (SelectIndex != -1)
             {
                 //スロットを選択
-                itemShortcutSlots[IndexList[SelectIndex]].ItemShortcutSlotScript?.SlotEnter();
+                SlotScript.SelectSlot(itemShortcutSlots[IndexList[SelectIndex]].ItemShortcutSlotScript.slotData);
+            }
+            else
+            {
+                //現在選択されているスロットの選択解除をして、選択スロットをNullにする
+                SlotScript.SelectSlot(null);
             }
         }
     }
@@ -94,7 +87,7 @@ public class ItemShortcutScript : MonoBehaviour
         for (int x = 0; x < itemShortCutSlots; x++)
         {
             //スロットの生成
-            ItemShortcutSlotData newSlot = ItemShortcutSlotScript.Create(ItemShortcutSlotPrefab, gameObject, inventoryScript, IndexList, nowIndex);
+            ItemShortcutSlotData newSlot = ItemShortcutSlotScript.Create(ItemShortcutSlotPrefab, gameObject, IndexList, nowIndex);
             if (newSlot == null)
             {
                 Debug.Log("Item Shortcut Initialize Failed");

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -25,10 +26,10 @@ public class ItemShortcutSlotData
     }
 }
 
-public class ItemShortcutSlotScript : MonoBehaviour
+public class ItemShortcutSlotScript : SlotScript
 {
     //ショートカット用スロットの作成と割り当て
-    public static ItemShortcutSlotData Create(GameObject prefab, GameObject inventory, InventoryScript inventoryScript,int[] IndexList,int index)
+    public static ItemShortcutSlotData Create(GameObject prefab, GameObject inventory, int[] IndexList, int index)
     {
         //キー割り当てできないので作らない
         if (index > IndexList.Length - 1) return null;
@@ -36,10 +37,9 @@ public class ItemShortcutSlotScript : MonoBehaviour
         //ショートカットスロット生成
         GameObject slot = Instantiate(prefab);
         ItemShortcutSlotScript itemShortcutSlotScript = slot.GetComponent<ItemShortcutSlotScript>();
-        itemShortcutSlotScript.slotData = new SlotData(slot, slot.GetComponent<SlotScript>());
+        itemShortcutSlotScript.slotData = new SlotData(slot, itemShortcutSlotScript);
         //イベントハンドラー初期設定
         itemShortcutSlotScript.slotData.SlotScript.PrepareEventTrigger();
-        itemShortcutSlotScript.slotData.SlotScript.InventoryScript = inventoryScript;
 
 
         //インデックス割り当て
@@ -55,49 +55,81 @@ public class ItemShortcutSlotScript : MonoBehaviour
 
     //キー割り当て用インデックス
     public int Index { get; private set; } = -1;
-    //インベントリーで管理しているスロットデータクラス
-    public SlotData slotData;
+
+    void Awake()
+    {
+        //スタック管理クラスの取得
+        stackScript = transform.Find("Stacks")?.GetComponent<StackScript>();
+        if (stackScript == null)
+        {
+            Debug.Log("スロットの初期化に失敗");
+        }
+        //アイコン表示コンポーネントを取得
+        ItemIcon = transform.Find("ItemIcon")?.GetComponent<Image>();
+        if (ItemIcon == null)
+        {
+            Debug.Log("スロットの初期化に失敗");
+        }
+        SlotIcon = GetComponent<Image>();
+        if (SlotIcon == null)
+        {
+            Debug.Log("スロットの初期化に失敗");
+        }
+    }
 
     void Update()
     {
+        if (SlotIcon == null)
+        {
+            Debug.Log("スロットの初期化に失敗");
+        }
         //自分のインデックスと同じキーが押されたかどうか
         if (Input.GetKeyDown(KeyCode.Alpha0 + Index))
         {
-            //選択中にもう一回選択されたら選択解除
-            if (slotData.SlotScript.InventoryScript.selectSlotData == slotData)
-            {
-                ItemShortcutScript.SelectIndex = ItemShortcutScript.UNSELECT_INDEX;
-                SlotExit();
-            }
-            else
-            {
-                SlotEnter();
-            }
+            SlotEnter();
         }
     }
 
     //選択
     public void SlotEnter()
     {
+        if (selectSlotData != slotData)
         {
             //即時使用か選択か
             if (slotData.SlotScript.Item?.IsImmediateUse == true)
             {
                 //アイテム使用
-                slotData.SlotScript.InventoryScript.UseItem(slotData);
+                InventoryScript.InventoryScriptInstance.UseItem(slotData);
             }
             else
             {
                 //アイテム選択
-                slotData.SlotScript.InventoryScript.SelectSlot(slotData);
+                SelectSlot(slotData);
+                ItemShortcutScript.SelectIndex = Array.IndexOf(ItemShortcutScript.IndexList, Index);
             }
+        }
+        else
+        {
+            SlotExit();
+            ItemShortcutScript.SelectIndex = ItemShortcutScript.UNSELECT_INDEX;
         }
     }
     //選択終わり
     public void SlotExit()
     {
         //アイテム選択解除
-        slotData.SlotScript.InventoryScript.DeselectSlot(slotData);
+        DeselectSlot(slotData);
     }
 
+    /// <summary>
+    /// 選択状態に
+    /// </summary>
+    protected override void Select()
+    {
+        if (Index != ItemShortcutScript.GetSelectIndexForSlotIndex())
+        {
+            ItemShortcutScript.SelectIndex = Array.IndexOf(ItemShortcutScript.IndexList, Index);
+        }
+        base.Select();
+    }
 }

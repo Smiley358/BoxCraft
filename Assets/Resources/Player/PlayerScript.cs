@@ -35,16 +35,11 @@ public class PlayerScript : MonoBehaviour
     //PlayerのRigidbody
     private Rigidbody playerRigidbody;
 
-    //インベントリー管理クラス
-    private InventoryScript inventoryScript;
-
     void Start()
     {
         //初期視点
         ViewVector = new Vector3(1.0f, 0.0f, 0.0f);
         IsGround = false;
-        //インベントリーの管理クラスを取得
-        inventoryScript = GameObject.Find("Inventory")?.GetComponent<InventoryScript>();
         //Rigidbody取得
         playerRigidbody = GetComponent<Rigidbody>() ?? throw new PlayerInitializeFailException(paramName: nameof(playerRigidbody), message: "playerRigidbody cannot be null");
     }
@@ -52,7 +47,7 @@ public class PlayerScript : MonoBehaviour
     void Update()
     {
         //インベントリーが開いているときはカメラ動かさない
-        if (!inventoryScript.IsActiveInventory)
+        if (!InventoryScript.InventoryScriptInstance.IsActiveInventory)
         {
             //マウスベクトルの取得
             Vector2 mouse = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
@@ -100,7 +95,7 @@ public class PlayerScript : MonoBehaviour
         if (other.gameObject.name != "ItemContent") return;
 
         //アイテムの追加
-        inventoryScript.TryAddItem(other.gameObject.transform.parent.GetComponent<ItemScript>());
+        InventoryScript.InventoryScriptInstance.TryAddItem(other.gameObject.transform.parent.GetComponent<ItemScript>());
     }
 
     //視点・体方向セット

@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
+using System;
 
 public class ItemContentScript : MonoBehaviour
 {
@@ -8,6 +10,8 @@ public class ItemContentScript : MonoBehaviour
     private float startTime;
     //結合処理状況
     private bool OnJoin;
+    //自分の親オブジェクト
+    [NonSerialized] public ItemScript ParentScript;
 
     void Start()
     {
@@ -37,7 +41,13 @@ public class ItemContentScript : MonoBehaviour
         if (other.gameObject.GetComponent<ItemContentScript>().OnJoin == true) return;
 
         //親に結合通知
-        other.transform.parent.gameObject.SendMessage("JoinItem", transform.parent.gameObject.GetComponent<ItemScript>().contentCount);
+        ExecuteEvents.Execute<IItemJoiner>(
+            target: other.transform.parent.gameObject,
+            eventData: null,
+            functor: (IItemJoiner itemJoiner, BaseEventData eventData) =>
+            {
+                itemJoiner.JoinItem(ParentScript.contentCount);
+            });
         OnJoin = true;
         Destroy(transform.parent.gameObject);
     }

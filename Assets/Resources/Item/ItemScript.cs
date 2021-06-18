@@ -2,8 +2,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
-public class ItemScript : MonoBehaviour
+interface IItemJoiner : IEventSystemHandler
+{
+    void JoinItem(int count);
+}
+
+public class ItemScript : MonoBehaviour,IItemJoiner
 {
     //アイテムのprefab
     static public GameObject ItemPrefab;
@@ -56,6 +62,8 @@ public class ItemScript : MonoBehaviour
         madeContent.GetComponent<MeshFilter>().mesh = itemObject.GetComponent<MeshFilter>().mesh;
         //マテリアルの設定
         madeContent.GetComponent<MeshRenderer>().material = itemObject.GetComponent<MeshRenderer>().material;
+        //親オブジェクトのスクリプトを格納
+        madeContent.GetComponent<ItemContentScript>().ParentScript = itemScript;
         return true;
     }
 
@@ -163,4 +171,5 @@ public class ItemScript : MonoBehaviour
 
         return count;
     }
+
 }

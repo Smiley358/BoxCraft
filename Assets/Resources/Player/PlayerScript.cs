@@ -18,14 +18,20 @@ class PlayerInitializeFailException : Exception
 
 public class PlayerScript : MonoBehaviour, IGroundCheck
 {
-    //視点ベクトル
-    private Vector3 ViewVector;
+    //通常時のコンストレイント（X・Y回転を固定、Y軸移動を固定）
+    private const RigidbodyConstraints NormalConstraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ | RigidbodyConstraints.FreezePositionY;
+    //浮遊時のコンストレイント（X・Y回転を固定）
+    private const RigidbodyConstraints FloatingConstraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
     //接地判定
     private bool IsGround;
+    //視点ベクトル
+    private Vector3 ViewVector;
     //PlayerのRigidbody
     private Rigidbody playerRigidbody;
     //移動速度
     [SerializeField] private float speed;
+    //ダッシュ速度
+    [SerializeField] private float sprintSpeed;
     //マウス感度
     [SerializeField] private float mouseSensitivity;
     //ジャンプ力
@@ -69,15 +75,34 @@ public class PlayerScript : MonoBehaviour, IGroundCheck
 
         //リジッドボディを取得、重力の設定
         playerRigidbody = GetComponent<Rigidbody>();
+        //スピード計算
         moveVelocity *= speed;
-        moveVelocity.y = playerRigidbody.velocity.y;
+        //Y軸移動は重力計算に任せる
+        moveVelocity.y = 0;
 
-        //ジャンプ
-        if (IsGround&&Input.GetKey(KeyCode.Space))
+        if (IsGround)
         {
-            //ジャンプする場合重力の重力を加算しない
-            jumpVelocity = Vector3.up * jumpPower;
-            moveVelocity.y = jumpVelocity.y;
+            //スプリント
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                moveVelocity *= sprintSpeed;
+            }
+            //ジャンプ
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                //ジャンプする場合重力の重力を加算しない
+                jumpVelocity = Vector3.up * jumpPower;
+                moveVelocity.y = jumpVelocity.y;
+                //縦移動をなくす
+                playerRigidbody.constraints = FloatingConstraints;
+                //少し浮かす（Floatの誤差のせいで接地判定がぶれさせないバイアスがあるため）
+                transform.position = transform.position + new Vector3(0, 0.03f, 0);
+            }
+        }
+        else
+        {
+            //浮遊中は物理演算の落下に任せる
+            moveVelocity.y = playerRigidbody.velocity.y;
         }
 
         //移動加速度を設定
@@ -112,9 +137,13 @@ public class PlayerScript : MonoBehaviour, IGroundCheck
     /// <summary>
     ///接地
     /// </summary>
-    public void OnTheGround()
+    public void OnTheGround(float distance)
     {
         IsGround = true;
+        //縦移動をなくす
+        playerRigidbody.constraints = NormalConstraints;
+        //地面の上へ押し戻し
+        transform.position = transform.position + new Vector3(0, distance, 0);
     }
 
     /// <summary>
@@ -123,5 +152,7 @@ public class PlayerScript : MonoBehaviour, IGroundCheck
     public void Floating()
     {
         IsGround = false;
+        //縦移動を行う
+        playerRigidbody.constraints = FloatingConstraints;
     }
 }

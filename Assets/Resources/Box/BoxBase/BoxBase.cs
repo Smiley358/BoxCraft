@@ -8,6 +8,8 @@ using UnityEngine;
 /// </summary>
 public abstract class BoxBase : MonoBehaviour
 {
+    //自分自身のprefab、BoxSpawnerにセットするよう
+    [SerializeField] protected GameObject prefab;
     //アイテムデータ
     public InventoryItem ItemData { get; protected set; } = new InventoryItem();
     //回転可能かどうか
@@ -15,34 +17,37 @@ public abstract class BoxBase : MonoBehaviour
     //アイテムアイコン
     [SerializeField] private Sprite itemIcon;
 
-    void Awake()
+    protected void InitializeBox()
     {
-        ItemData.ItemName = gameObject.name.Replace("(Clone)", "");
+        ItemData.ItemName = gameObject.name.Replace("(Clone)", "").Split(' ')[0];
         ItemData.ItemIcon = itemIcon;
 
         ItemData.SelectDelegate = (SlotScript slot) =>
         {
-            BoxSpawnerScript boxSpawnerScript = GameObject.Find("BoxSpawner")?.GetComponent<BoxSpawnerScript>();
             string path = "Box/" + ItemData.ItemName + "/" + ItemData.ItemName;
-            boxSpawnerScript.Box = Resources.Load(path) as GameObject;
-            boxSpawnerScript.PredictionBoxUpdate();
+            BoxSpawnerScript.ScriptInstance.NextBox = Resources.Load(path) as GameObject;
         };
 
         ItemData.DeselectDelegate = (SlotScript slot) =>
         {
-            BoxSpawnerScript boxSpawnerScript = GameObject.Find("BoxSpawner")?.GetComponent<BoxSpawnerScript>();
-            boxSpawnerScript.Box = null;
-            boxSpawnerScript.PredictionBoxUpdate();
+            BoxSpawnerScript.ScriptInstance.NextBox = null;
         };
 
-        ItemData.UseDelegate = () => true;
+        ItemData.UseDelegate = () =>
+        {
+            string path = "Box/" + ItemData.ItemName + "/" + ItemData.ItemName;
+            return BoxSpawnerScript.ScriptInstance.ReservationSpawnBox(Resources.Load(path) as GameObject);
+        };
 
         ItemData.UsedupDelegate = (SlotScript slot) => 
         {
-            BoxSpawnerScript boxSpawnerScript = GameObject.Find("BoxSpawner")?.GetComponent<BoxSpawnerScript>();
-            boxSpawnerScript.Box = null;
-            boxSpawnerScript.PredictionBoxUpdate();
+            BoxSpawnerScript.ScriptInstance.NextBox = null;
         };
+    }
+
+    private void Start()
+    {
+        InitializeBox();
     }
 
     /// <summary>

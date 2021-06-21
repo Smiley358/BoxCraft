@@ -89,6 +89,13 @@ public class InventoryScript : MonoBehaviour
             hoverSlot.SetActive(false);
             hoverSlotScript.ResetSlot();
         }
+
+        //右クリックしたら選択状態のアイテムを使用する
+        if ((!IsActiveInventory) && Input.GetMouseButtonDown(1))
+        {
+            //アイテム使用
+            UseItem(SlotScript.selectSlotData);
+        }
     }
 
     /// <summary>
@@ -210,10 +217,15 @@ public class InventoryScript : MonoBehaviour
     public bool UseItem(SlotData slot)
     {
         //スロットデータなかったら失敗
-        if (slot == null) return false;
-
-        //アイテムの使用
-        return slot.SlotScript.UseItem();
+        if (slot == null)
+        {
+            return false;
+        }
+        else
+        {
+            //アイテムの使用
+            return slot.SlotScript.UseItem();
+        }
     }
 
     /// <summary>
@@ -290,16 +302,18 @@ public class InventoryScript : MonoBehaviour
         //空のスロットはクリックできない
         if (slot.SlotScript.IsEmpty()) return;
 
-        //右クリックで使用か選択か
+        //即時使用か選択か
         if (slot.SlotScript.Item?.IsImmediateUse == true)
         {
             //アイテム使用
-            UseItem(slot);
+            bool isSucceeded = UseItem(slot);
+            if (!isSucceeded)
+            {
+                Debug.Log("Item could not be used successfully");
+            }
         }
         else
         {
-            //同じスロットなら選択解除
-            SlotScript.DeselectSlot(slot);
             //アイテムスロット選択
             SlotScript.SelectSlot(slot);
         }

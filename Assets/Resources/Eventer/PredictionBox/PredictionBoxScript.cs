@@ -16,6 +16,9 @@ public class PredictionBoxScript : MonoBehaviour
     //表示用BOXマテリアル
     private Material renderBoxMaterial;
 
+    //一個前に入っていたBOX
+    private GameObject previousBox;
+
     //生成可能フラグ
     public bool IsCreatable { get; private set; }
 
@@ -103,10 +106,21 @@ public class PredictionBoxScript : MonoBehaviour
     /// <param name="attach">表示用のBOXのPrefab</param>
     public void AttachPrefab(GameObject attach)
     {
+        //同じものをアタッチしようとしていたら何もしない
+        if (attach == previousBox)
+        {
+            return;
+        }
+        else
+        {
+            //attachされるBoxを保存
+            previousBox = attach;
+        }
         //現在の表示用BOXをデタッチ
         DetachPrefab();
         //nullなら作成しない
         if (attach == null) return;
+
 
         //表示用BOXの生成
         GameObject madeObject = Instantiate(attach, gameObject.transform);

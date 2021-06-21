@@ -23,8 +23,20 @@ public class ItemScript : MonoBehaviour,IItemJoiner
         InitializeOnceDelegate = null;
     };
 
+    void Awake()
+    {
+        //一応初期化しておく
+        InitializeOnceDelegate?.Invoke();
+    }
+
+    /// <summary>
+    /// アイテムを生成する
+    /// </summary>
+    /// <param name="itemObject">生成するアイテムオブジェクト</param>
+    /// <returns>生成できたかどうか</returns>
     public static bool Create(GameObject itemObject)
     {
+        //タイミング的に呼ばれていなかった時用
         InitializeOnceDelegate?.Invoke();
 
         //アイテム化するBOXの管理クラスを取得
@@ -56,6 +68,8 @@ public class ItemScript : MonoBehaviour,IItemJoiner
 
         //アイテムの中身をインスタンス化
         GameObject madeContent = Instantiate(ItemContentPrefab, madeObject.transform);
+        //アイテム本体の座標にセット
+        madeContent.transform.position = madeObject.transform.position;
         //本来の名前に変更（"(Clone)"とゆう接尾辞を消す）
         madeContent.name = ItemContentPrefab.name;
         //メッシュの設定

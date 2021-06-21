@@ -1,11 +1,16 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class BoxSpawnerScript : MonoBehaviour
 {
+    static public BoxSpawnerScript ScriptInstance;
+
     //ボックスのprefab
-    public GameObject Box;
+    private GameObject box;
+    //外から変更する用のBox
+    public GameObject NextBox;
 
     //画面中央の座標
     private Vector2 displayCenter;
@@ -20,6 +25,14 @@ public class BoxSpawnerScript : MonoBehaviour
     //設置予測用BOXの制御スクリプト
     [SerializeField] private PredictionBoxScript predictionBoxScript;
 
+    //BOXを設置するためのデリゲート
+    private Action<GameObject, Vector3, Quaternion> boxSpawnDelegate;
+
+    private void Awake()
+    {
+        ScriptInstance = this;
+    }
+
     void Start()
     {
         //画面中央の座標
@@ -31,10 +44,10 @@ public class BoxSpawnerScript : MonoBehaviour
         predictionBox.SetActive(false);
 
         //接地予測BOXを更新
-        PredictionBoxUpdate();
+        predictionBoxScript.AttachPrefab(box);
     }
 
-    void Update()
+    void LateUpdate()
     {
         bool isCreatable = false;
         if (predictionBoxScript.IsValid())
@@ -43,7 +56,7 @@ public class BoxSpawnerScript : MonoBehaviour
         }
         else
         {
-            PredictionBoxUpdate();
+            predictionBoxScript.AttachPrefab(box);
         }
 
         //レイを飛ばすベクトルのセット
@@ -56,12 +69,9 @@ public class BoxSpawnerScript : MonoBehaviour
         //レイを飛ばす
         if (!(InventoryScript.Instance.IsActiveInventory) && Physics.Raycast(ray, out raycastHit, 10.0f, layerMask))
         {
-            //レイが当たった面の法線方向にボックスを生成する
-            boxSpawnPos = raycastHit.normal + raycastHit.collider.transform.position;
 
             //BOXの設置予測活性化
             predictionBox.SetActive(true);
-            predictionBox.transform.position = boxSpawnPos;
 
             //BOXの回転
             if (Input.GetKeyDown(KeyCode.R))
@@ -71,17 +81,16 @@ public class BoxSpawnerScript : MonoBehaviour
             }
 
             //BOXの生成・削除処理
-            if (Input.GetMouseButtonDown(1) && isCreatable && (Box != null))
+            if (isCreatable)
             {
-                if (Box != null)
-                {
-                    // 生成位置の変数の座標にブロックを生成
-                    GameObject madeBox = Instantiate(Box, boxSpawnPos, predictionBoxScript.GetRotate());
-                    madeBox.name = Box.name;
-                    //設置した
-                    SlotScript.selectSlotData?.SlotScript?.UseItem();
-                }
+                //レイが当たった面の法線方向にボックスを生成するため計算
+                boxSpawnPos = raycastHit.normal + raycastHit.collider.transform.position;
+                //予測BOXの座標を更新
+                predictionBox.transform.position = boxSpawnPos;
+                //Boxの生成が予約されている場合にBoxを生成
+                boxSpawnDelegate?.Invoke(box, boxSpawnPos, predictionBoxScript.GetRotate());
             }
+
             if (Input.GetMouseButtonDown(0))
             {
                 //レイがあたったオブジェクトを削除
@@ -97,13 +106,48 @@ public class BoxSpawnerScript : MonoBehaviour
             //BOXの設置予測非活性化
             predictionBox.SetActive(false);
         }
+
+        //Boxの更新
+        if(NextBox != box)
+        {
+            box = NextBox;
+        }
+        //設置予測BOXの更新
+        predictionBoxScript.AttachPrefab(box);
     }
 
+
     /// <summary>
-    /// 設置予測BOXを最新の状態へ更新
+    /// Boxの生成を予約する
     /// </summary>
-    public void PredictionBoxUpdate()
+    /// <param name="box">生成するBoxのprefab</param>
+    /// <returns>生成予約出来たらTrue</returns>
+    public bool ReservationSpawnBox(GameObject box)
     {
-        predictionBoxScript.AttachPrefab(Box);
+        //設置可能か調べる
+        bool isCreatable = false;
+        if (predictionBoxScript.IsValid())
+        {
+            isCreatable = predictionBoxScript.IsCreatable;
+        }
+
+        //既に予約済みならFalseを返す
+        if (boxSpawnDelegate != null) return false;
+        //現在生成不可状態ならFalseを返す
+        if (!isCreatable) return false;
+
+        //Boxの生成デリゲート作成
+        boxSpawnDelegate = (GameObject box, Vector3 position, Quaternion rotation) =>
+        {
+            if (this.box != null)
+            {
+                // 生成位置の変数の座標にブロックを生成
+                GameObject madeBox = Instantiate(box, position, rotation);
+                madeBox.name = this.box.name;
+            }
+            boxSpawnDelegate = null;
+        };
+
+        return true;
     }
 }

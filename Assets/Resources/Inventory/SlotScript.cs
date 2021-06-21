@@ -69,12 +69,18 @@ public class SlotScript : MonoBehaviour
     /// nullを指定した場合、現在選択されているスロットを解除する。</param>
     public static void SelectSlot(SlotData slotData)
     {
-        if (selectSlotData != null)
+        //既に選択中だったら
+        if (slotData == selectSlotData)
         {
-            selectSlotData.SlotScript.Deselect();
+            //選択解除
+            selectSlotData?.SlotScript?.Deselect();
+            selectSlotData = null;
+            return;
         }
+        //選択中のスロットがあれば選択解除
+        selectSlotData?.SlotScript?.Deselect();
         //アイテム選択
-        slotData?.SlotScript.Select();
+        slotData?.SlotScript?.Select();
         //選択中スロットをセット
         selectSlotData = slotData;
     }
@@ -92,8 +98,6 @@ public class SlotScript : MonoBehaviour
         //選択中スロットをなくす
         selectSlotData = null;
     }
-
-
 
     //アイテムデータ
     public InventoryItem Item { get; set; } = null;
@@ -193,10 +197,12 @@ public class SlotScript : MonoBehaviour
         {
             //アイテム数を減らす
             stackScript.ItemCount--;
-            
+
             //使用できる数がない
             if (stackScript.ItemCount <= 0)
             {
+                //全アイテム使用デリゲート実行
+                Item.UsedupDelegate?.Invoke(this);
                 //スロットをリセット
                 ResetSlot();
             }
@@ -218,7 +224,7 @@ public class SlotScript : MonoBehaviour
         }
 
         //アイテムがいっぱいなら
-        if(Item.MaxStackSize <= stackScript.ItemCount)
+        if (Item.MaxStackSize <= stackScript.ItemCount)
         {
             return 0;
         }
@@ -246,7 +252,7 @@ public class SlotScript : MonoBehaviour
         stackScript.ItemCount += count;
         int addedItemOverFlowCount = Item.MaxStackSize - stackScript.ItemCount;
         //スタックがオーバーフローしていたら
-        if(addedItemOverFlowCount < 0)
+        if (addedItemOverFlowCount < 0)
         {
             //最大数にする
             stackScript.ItemCount = Item.MaxStackSize;
@@ -311,7 +317,7 @@ public class SlotScript : MonoBehaviour
     /// <param name="isDelegateExecute">デリゲートを実行するか</param>
     public void ResetSlot(bool isDelegateExecute = true)
     {
-        if ((Item != null) && isDelegateExecute) 
+        if ((Item != null) && isDelegateExecute)
         {
             //選択中なら解除
             DeselectSlot(SlotData);

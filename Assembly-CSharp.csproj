@@ -77,7 +77,7 @@
     <Compile Include="Assets\Resources\Item\ItemContentScript.cs" />
     <Compile Include="Assets\Scripts\VoxelGround.cs" />
     <Compile Include="Assets\Resources\Box\BoxVariant_Spike\SpikeScript.cs" />
-    <Compile Include="Assets\Resources\Item\IItemizeObject.cs" />
+    <Compile Include="Assets\Scripts\IItemizeObject.cs" />
     <Compile Include="Assets\Resources\Manager\PrefabManager.cs" />
   </ItemGroup>
   <ItemGroup>

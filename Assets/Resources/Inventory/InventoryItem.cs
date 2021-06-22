@@ -34,7 +34,7 @@ public class InventoryItem
     //選択解除されたときに実行される処理
     public Action<SlotScript> DeselectDelegate;
     //使用されたときに実行される処理
-    public Func<bool> UseDelegate;
+    public Func<SlotScript, bool> UseDelegate;
     //使い切った時に実行される処理
     public Action<SlotScript> UsedupDelegate;
 }

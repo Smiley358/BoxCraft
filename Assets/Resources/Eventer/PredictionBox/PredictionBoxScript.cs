@@ -33,18 +33,18 @@ public class PredictionBoxScript : MonoBehaviour
 
         if (renderBoxMaterial == null)
         {
-            renderBoxMaterial = renderBox.GetComponent<MeshRenderer>().material;
+            renderBoxMaterial = renderBoxScript?.GetMeshRenderer()?.material;
             if (renderBoxMaterial == null) return;
         }
 
         //BOXの設置予測可否表示
         if (IsCreatable)
         {
-            renderBox.GetComponent<MeshRenderer>().material.color = canCreatableMaterial.color;
+            renderBoxMaterial.color = canCreatableMaterial.color;
         }
         else
         {
-            renderBox.GetComponent<MeshRenderer>().material.color = canNotCreatableMaterial.color;
+            renderBoxMaterial.color = canNotCreatableMaterial.color;
         }
     }
 
@@ -97,7 +97,7 @@ public class PredictionBoxScript : MonoBehaviour
     /// </summary>
     public Quaternion GetRotate()
     {
-        return renderBox==null ? renderBox.transform.rotation : Quaternion.identity;
+        return renderBox!=null ? renderBox.transform.rotation : Quaternion.identity;
     }
 
     /// <summary>
@@ -134,15 +134,18 @@ public class PredictionBoxScript : MonoBehaviour
         //当たり判定を無効化
         renderBoxScript?.DisableCollition();
         //シェーダーをFadeに
-        renderBoxMaterial = renderBox.GetComponent<MeshRenderer>().material;
-        renderBoxMaterial.SetOverrideTag("RenderType", "Transparent");
-        renderBoxMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-        renderBoxMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-        renderBoxMaterial.SetInt("_ZWrite", 0);
-        renderBoxMaterial.DisableKeyword("_ALPHATEST_ON");
-        renderBoxMaterial.EnableKeyword("_ALPHABLEND_ON");
-        renderBoxMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-        renderBoxMaterial.renderQueue = 3000;
+        renderBoxMaterial = renderBoxScript?.GetMeshRenderer()?.material;
+        if (renderBoxMaterial != null)
+        {
+            renderBoxMaterial.SetOverrideTag("RenderType", "Transparent");
+            renderBoxMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            renderBoxMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            renderBoxMaterial.SetInt("_ZWrite", 0);
+            renderBoxMaterial.DisableKeyword("_ALPHATEST_ON");
+            renderBoxMaterial.EnableKeyword("_ALPHABLEND_ON");
+            renderBoxMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            renderBoxMaterial.renderQueue = 3000;
+        }
     }
 
     /// <summary>

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86805561c905e6d4096f0d6b4569e92e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prefab: {fileID: 1117176970449583919}
+  prefabName: BoxVariant_RainforcedBox
   itemIcon: {fileID: 21300000, guid: 11dfb47ea2c912c48a9b6bae34bfbfca, type: 3}
 --- !u!1001 &8840419767577320967
 PrefabInstance:

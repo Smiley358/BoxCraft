@@ -190,7 +190,7 @@ public class SlotScript : MonoBehaviour
         if (Item == null) return false;
 
         //アイテム使用
-        bool isUsed = Item.UseDelegate?.Invoke() ?? false;
+        bool isUsed = Item.UseDelegate?.Invoke(this) ?? false;
 
         //アイテムの使用が正常終了していたら
         if (isUsed)

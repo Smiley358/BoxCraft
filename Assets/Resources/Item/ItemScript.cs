@@ -12,9 +12,11 @@ interface IItemJoiner : IEventSystemHandler
 public class ItemScript : MonoBehaviour,IItemJoiner
 {
     //アイテムのprefab
-    static public GameObject ItemPrefab;
+    public static GameObject ItemPrefab;
     //アイテムの中身のprefab
-    static public GameObject ItemContentPrefab;
+    public static GameObject ItemContentPrefab;
+    //
+    public const string ItemPrefix = "Item_";
 
     private static Action InitializeOnceDelegate = () =>
     {
@@ -32,22 +34,22 @@ public class ItemScript : MonoBehaviour,IItemJoiner
     /// <summary>
     /// アイテムを生成する
     /// </summary>
-    /// <param name="itemObject">生成するアイテムオブジェクト</param>
+    /// <param name="itemizeObject">生成するアイテムオブジェクト</param>
     /// <returns>生成できたかどうか</returns>
-    public static bool Create(GameObject itemObject)
+    public static bool Create(GameObject itemizeObject)
     {
         //タイミング的に呼ばれていなかった時用
         InitializeOnceDelegate?.Invoke();
 
-        //アイテム化するBOXの管理クラスを取得
-        BoxBase box = itemObject.GetComponent<BoxBase>();
-        //Box管理クラスを持っていなければアイテムデータもないので生成しない
-        if (box == null)
+        //アイテム化インターフェースを取得
+        IItemizeObject itemize = itemizeObject.GetComponent<IItemizeObject>();
+        //IItemizeObjectにキャストできなければアイテム化不可能オブジェクト
+        if (itemize == null)
         {
             return false;
         }
         //アイテムデータを生成してセット
-        InventoryItem itemData = new InventoryItem(box.ItemData);
+        InventoryItem itemData = new InventoryItem(itemize.GetItemData());
         //アイテムデータがなかったらアイテム生成を行わない
         if (itemData == null)
         {
@@ -55,29 +57,29 @@ public class ItemScript : MonoBehaviour,IItemJoiner
         }
 
         //アイテムのインスタンス化
-        GameObject madeObject = Instantiate(ItemPrefab);
-        //madeObject.transform.SetPositionAndRotation(itemObject.transform.position, Quaternion.Euler(Vector3.zero));
-        madeObject.transform.position = itemObject.transform.position;
-        //madeObject.transform.localPosition = Vector3.zero;
-        madeObject.name = "Item_" + itemData.ItemName;
+        GameObject item = Instantiate(ItemPrefab);
+        //座標を設定
+        item.transform.position = itemizeObject.transform.position;
+        //名前はItemPrefix+アイテム名
+        item.name = ItemPrefix + itemData.ItemName;
 
         //アイテム管理クラスの取得
-        ItemScript itemScript = madeObject.GetComponent<ItemScript>();
+        ItemScript itemScript = item.GetComponent<ItemScript>();
         //アイテムデータの格納
         itemScript.ItemData = itemData;
 
         //アイテムの中身をインスタンス化
-        GameObject madeContent = Instantiate(ItemContentPrefab, madeObject.transform);
+        GameObject itemContent = Instantiate(ItemContentPrefab, item.transform);
         //アイテム本体の座標にセット
-        madeContent.transform.position = madeObject.transform.position;
+        itemContent.transform.position = item.transform.position;
         //本来の名前に変更（"(Clone)"とゆう接尾辞を消す）
-        madeContent.name = ItemContentPrefab.name;
+        itemContent.name = ItemContentPrefab.name;
         //メッシュの設定
-        madeContent.GetComponent<MeshFilter>().mesh = itemObject.GetComponent<MeshFilter>().mesh;
+        itemContent.GetComponent<MeshFilter>().mesh = itemize.GetMeshFilter()?.mesh;
         //マテリアルの設定
-        madeContent.GetComponent<MeshRenderer>().material = itemObject.GetComponent<MeshRenderer>().material;
-        //親オブジェクトのスクリプトを格納
-        madeContent.GetComponent<ItemContentScript>().ParentScript = itemScript;
+        itemContent.GetComponent<MeshRenderer>().material = itemize.GetMeshRenderer()?.material;
+        //親オブジェクトのスクリプトを設定
+        itemContent.GetComponent<ItemContentScript>().ParentScript = itemScript;
         return true;
     }
 

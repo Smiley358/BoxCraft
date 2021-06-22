@@ -6,10 +6,21 @@ using UnityEngine;
 /// BOXの基底クラス
 /// このクラスを継承すればBOXとしての最低限の機能を保証する
 /// </summary>
-public abstract class BoxBase : MonoBehaviour
+public abstract class BoxBase : MonoBehaviour,IAttackableObject,IItemizeObject
 {
-    //自分自身のprefab、BoxSpawnerにセットするよう
-    [SerializeField] protected GameObject prefab;
+    public static GameObject Create(GameObject box, Vector3 position, Quaternion rotation)
+    {
+        // 生成位置の変数の座標にブロックを生成
+        GameObject madeBox = Instantiate(box, position, rotation);
+        if(madeBox is null)
+        {
+            return null;
+        }
+        return madeBox;
+    }
+
+    //自分自身のprefab名、BoxSpawnerにセットするよう
+    [SerializeField] protected string prefabName;
     //アイテムデータ
     public InventoryItem ItemData { get; protected set; } = new InventoryItem();
     //回転可能かどうか
@@ -19,13 +30,14 @@ public abstract class BoxBase : MonoBehaviour
 
     protected void InitializeBox()
     {
-        ItemData.ItemName = gameObject.name.Replace("(Clone)", "").Split(' ')[0];
+        //戦闘の(Clone)を消して、Editorから追加したときに出る後ろの数字を消す
+        gameObject.name = gameObject.name.Replace("(Clone)", "").Split(' ')[0];
+        ItemData.ItemName = gameObject.name;
         ItemData.ItemIcon = itemIcon;
 
         ItemData.SelectDelegate = (SlotScript slot) =>
         {
-            string path = "Box/" + ItemData.ItemName + "/" + ItemData.ItemName;
-            BoxSpawnerScript.ScriptInstance.NextBox = Resources.Load(path) as GameObject;
+            BoxSpawnerScript.ScriptInstance.NextBox = PrefabManager.Instance.GetPrefab(slot.Item.ItemName);
         };
 
         ItemData.DeselectDelegate = (SlotScript slot) =>
@@ -33,10 +45,9 @@ public abstract class BoxBase : MonoBehaviour
             BoxSpawnerScript.ScriptInstance.NextBox = null;
         };
 
-        ItemData.UseDelegate = () =>
+        ItemData.UseDelegate = (SlotScript slot) =>
         {
-            string path = "Box/" + ItemData.ItemName + "/" + ItemData.ItemName;
-            return BoxSpawnerScript.ScriptInstance.ReservationSpawnBox(Resources.Load(path) as GameObject);
+            return BoxSpawnerScript.ScriptInstance.ReservationSpawnBox(PrefabManager.Instance.GetPrefab(slot.Item.ItemName));
         };
 
         ItemData.UsedupDelegate = (SlotScript slot) => 
@@ -106,5 +117,34 @@ public abstract class BoxBase : MonoBehaviour
         {
             colliderFlagment.isTrigger = true;
         }
+    }
+
+
+    //Implementation from Interface:IAttackableObject
+    public  virtual void OnAttack(in GameObject attacker)
+    {
+        bool isCreate = ItemScript.Create(gameObject);
+        if (isCreate)
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    //Implementation from Interface:IItemizeObject
+    public virtual InventoryItem GetItemData()
+    {
+        return ItemData;
+    }
+
+    //Implementation from Interface:IItemizeObject
+    public virtual MeshFilter GetMeshFilter()
+    {
+        return GetComponent<MeshFilter>();
+    }
+
+    //Implementation from Interface:IItemizeObject
+    public virtual MeshRenderer GetMeshRenderer()
+    {
+        return GetComponent<MeshRenderer>();
     }
 }

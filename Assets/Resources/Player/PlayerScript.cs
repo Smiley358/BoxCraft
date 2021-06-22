@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
+
 class PlayerInitializeFailException : Exception
 {
     private string paramName;
@@ -16,7 +18,7 @@ class PlayerInitializeFailException : Exception
     }
 }
 
-public class PlayerScript : MonoBehaviour, IGroundCheck
+public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
 {
     //通常時のコンストレイント（X・Y回転を固定、Y軸移動を固定）
     private const RigidbodyConstraints NormalConstraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ | RigidbodyConstraints.FreezePositionY;
@@ -36,8 +38,6 @@ public class PlayerScript : MonoBehaviour, IGroundCheck
     [SerializeField] private float mouseSensitivity;
     //ジャンプ力
     [SerializeField] private float jumpPower;
-    //プレイヤーの視点カメラ
-    [SerializeField] private GameObject playerCamera;
 
     void Start()
     {
@@ -67,14 +67,12 @@ public class PlayerScript : MonoBehaviour, IGroundCheck
 
 
         //カメラ正面
-        Vector3 camForward = Vector3.Scale(playerCamera.transform.forward, new Vector3(1, 0, 1)).normalized;
+        Vector3 camForward = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
         //移動ベクトル
-        Vector3 moveVelocity = (camForward * Input.GetAxis("Vertical")) + (playerCamera.transform.right * Input.GetAxis("Horizontal"));
+        Vector3 moveVelocity = (camForward * Input.GetAxis("Vertical")) + (Camera.main.transform.right * Input.GetAxis("Horizontal"));
         //ジャンプベクトル
         Vector3 jumpVelocity = Vector3.zero;
 
-        //リジッドボディを取得、重力の設定
-        playerRigidbody = GetComponent<Rigidbody>();
         //スピード計算
         moveVelocity *= speed;
         //Y軸移動は重力計算に任せる
@@ -110,6 +108,18 @@ public class PlayerScript : MonoBehaviour, IGroundCheck
 
         //カメラとプレイヤーの視点設定
         LookAtSet();
+
+        //攻撃判定
+        if (Input.GetMouseButtonDown(0))
+        {
+            //レイがあたったオブジェクト
+            GameObject hitGameObject = RaycastManager.RaycastHitObject.collider?.gameObject;
+            if (hitGameObject != null)
+            {
+                //レイがあたったオブジェクトに攻撃判定
+                EXAttackableObject.AttackNotification(gameObject, hitGameObject);
+            }
+        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -127,11 +137,11 @@ public class PlayerScript : MonoBehaviour, IGroundCheck
     void LookAtSet()
     {
         //カメラをプレイヤーの頭の上にセット
-        playerCamera.transform.position = new Vector3(this.transform.position.x, this.transform.position.y + 1.0f, this.transform.position.z);
+        Camera.main.transform.position = new Vector3(this.transform.position.x, this.transform.position.y + 1.0f, this.transform.position.z);
         //視点をセット
-        playerCamera.transform.LookAt(playerCamera.transform.position + ViewVector);
+        Camera.main.transform.LookAt(Camera.main.transform.position + ViewVector);
         //プレイヤーを視点方向に回転
-        transform.rotation = Quaternion.Euler(0, playerCamera.transform.rotation.eulerAngles.y, 0);
+        transform.rotation = Quaternion.Euler(0, Camera.main.transform.rotation.eulerAngles.y, 0);
     }
 
     /// <summary>
@@ -154,5 +164,12 @@ public class PlayerScript : MonoBehaviour, IGroundCheck
         IsGround = false;
         //縦移動を行う
         playerRigidbody.constraints = FloatingConstraints;
+    }
+
+    public void OnAttack(in GameObject attackerObject)
+    {
+        if (attackerObject.name != "BoxVariant_Spike") return;
+
+        Debug.Log("ダメージを受けました!!");
     }
 }

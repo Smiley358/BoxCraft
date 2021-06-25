@@ -47,8 +47,7 @@ public class GroundCheckScript : MonoBehaviour
         }
         else
         {
-            //“Þ—Ž‚¾‚Á‚½‚ç’n–Ê”»’è‚É‚µ‚Ä‚¨‚­
-            isGround = true;
+            isGround = false;
         }
 
         //‘O‰ñ‚ÌŒ‹‰Ê‚ÆˆÙ‚È‚Á‚Ä‚¢‚½‚ç

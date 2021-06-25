@@ -110,7 +110,7 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
         LookAtSet();
 
         //攻撃判定
-        if (Input.GetMouseButton(0))
+        if (Input.GetMouseButtonDown(0))
         {
             //レイがあたったオブジェクト
             GameObject hitGameObject = RaycastManager.RaycastHitObject.collider?.gameObject;

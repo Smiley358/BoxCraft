@@ -58,32 +58,27 @@
   <ItemGroup>
     <Compile Include="Assets\Resources\Inventory\InventoryItem.cs" />
     <Compile Include="Assets\Resources\Item\ItemScript.cs" />
-    <Compile Include="Assets\Resources\Box\Box\BoxVariant_RainforcedBox\RainforcedBoxScript.cs" />
-    <Compile Include="Assets\Resources\Box\Box\BoxVariant_WoodBox\WoodBoxScript.cs" />
-    <Compile Include="Assets\Resources\Box\Box\BoxVariant_DynamicBox\DynamicBoxScript.cs" />
+    <Compile Include="Assets\Resources\Box\BoxVariant_RainforcedBox\RainforcedBoxScript.cs" />
+    <Compile Include="Assets\Resources\Box\BoxVariant_WoodBox\WoodBoxScript.cs" />
+    <Compile Include="Assets\Resources\Box\BoxVariant_DynamicBox\DynamicBoxScript.cs" />
     <Compile Include="Assets\Resources\Manager\RaycastManager.cs" />
-    <Compile Include="Assets\Resources\Player\PlayerCamera.cs" />
     <Compile Include="Assets\Resources\Eventer\PredictionBox\PredictionBoxScript.cs" />
     <Compile Include="Assets\Resources\Inventory\ItemShortcutScript.cs" />
     <Compile Include="Assets\Resources\Eventer\BoxSpawnerScript.cs" />
     <Compile Include="Assets\Resources\Inventory\StackScript.cs" />
-    <Compile Include="Assets\Resources\Box\Box\BoxBase\BoxBase.cs" />
+    <Compile Include="Assets\Resources\Box\BoxBase\BoxBase.cs" />
     <Compile Include="Assets\Scripts\IAttackableObject.cs" />
     <Compile Include="Assets\Resources\Player\GroundCheckScript.cs" />
-    <Compile Include="Assets\CullingTestBox.cs" />
     <Compile Include="Assets\Resources\Inventory\SlotScript.cs" />
-    <Compile Include="Assets\Scripts\TimeSpanFlag.cs" />
     <Compile Include="Assets\Resources\Renderer\LinearTextureTileUVMappingScript.cs" />
     <Compile Include="Assets\Resources\Inventory\ItemShortcutSlotScript.cs" />
-    <Compile Include="Assets\Resources\Manager\PrefabManager.cs" />
-    <Compile Include="Assets\Resources\Box\Box\BoxVariant_Spike\SpikeScript.cs" />
-    <Compile Include="Assets\Scripts\IItemizeObject.cs" />
     <Compile Include="Assets\Resources\Player\PlayerScript.cs" />
     <Compile Include="Assets\Resources\Inventory\InventoryScript.cs" />
     <Compile Include="Assets\Resources\Item\ItemContentScript.cs" />
-    <Compile Include="Assets\Scripts\TerrainGenerator.cs" />
-    <Compile Include="Assets\Resources\Box\Chunk\ChunkScript.cs" />
-    <Compile Include="Assets\Scripts\IAdjacetBoxNotifier.cs" />
+    <Compile Include="Assets\Scripts\VoxelGround.cs" />
+    <Compile Include="Assets\Resources\Box\BoxVariant_Spike\SpikeScript.cs" />
+    <Compile Include="Assets\Scripts\IItemizeObject.cs" />
+    <Compile Include="Assets\Resources\Manager\PrefabManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

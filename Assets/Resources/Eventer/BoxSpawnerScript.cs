@@ -7,21 +7,21 @@ public class BoxSpawnerScript : MonoBehaviour
 {
     static public BoxSpawnerScript ScriptInstance;
 
-    //ボックスのprefab
-    private GameObject box;
+
     //外から変更する用のBox
     public GameObject NextBox;
-
+    //ボックスのprefab
+    private GameObject box;
     // ボックスを設置する位置
     private Vector3 boxSpawnPos;
+    //BOXを設置するためのデリゲート
+    private Action<GameObject, Vector3, Quaternion> boxSpawnDelegate;
 
     //設置予測用BOX
     [SerializeField] private GameObject predictionBox;
     //設置予測用BOXの制御スクリプト
     [SerializeField] private PredictionBoxScript predictionBoxScript;
 
-    //BOXを設置するためのデリゲート
-    private Action<GameObject, Vector3, Quaternion> boxSpawnDelegate;
 
     private void Awake()
     {

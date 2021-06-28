@@ -10,7 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 7795402916297582891}
   - component: {fileID: 4903260299265711745}
-  m_Layer: 28
+  - component: {fileID: 1296756499475754707}
+  m_Layer: 6
   m_Name: Chunk
   m_TagString: Eventer
   m_Icon: {fileID: 0}
@@ -46,3 +47,16 @@ MonoBehaviour:
   size: {x: 0, y: 0, z: 0}
   center: {x: 0, y: 0, z: 0}
   prefab: {fileID: 4774965842175194969, guid: 628bb25721d449b41bbe077dfab86177, type: 3}
+--- !u!65 &1296756499475754707
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7795402916297582889}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 32, y: 32, z: 32}
+  m_Center: {x: 0, y: 0, z: 0}

@@ -137,7 +137,7 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
     void LookAtSet()
     {
         //カメラをプレイヤーの頭の上にセット
-        Camera.main.transform.position = new Vector3(this.transform.position.x, this.transform.position.y + 1.0f, this.transform.position.z);
+        Camera.main.transform.position = new Vector3(this.transform.position.x, this.transform.position.y + 0.8f, this.transform.position.z);
         //視点をセット
         Camera.main.transform.LookAt(Camera.main.transform.position + ViewVector);
         //プレイヤーを視点方向に回転

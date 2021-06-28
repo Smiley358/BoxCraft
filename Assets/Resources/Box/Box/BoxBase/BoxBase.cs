@@ -36,8 +36,12 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     public InventoryItem ItemData { get; protected set; } = new InventoryItem();
     //回転可能かどうか
     protected bool canRotate;
+    //初期化済みかどうか
+    protected bool isInitialized;
     //無敵時間かどうか
     protected TimeSpanFlag isGod;
+    //処理をするかどうか
+    protected TimeSpanFlag isUpdate;
     //コライダー
     protected Collider boxCollider;
     //メッシュレンダラー
@@ -45,7 +49,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     //所属チャンク
     protected ChunkScript affiliationChunk;
     //HP
-    [field: SerializeField] public int HP { get; protected set; }
+    [field: SerializeField] public int HP { get; protected set; } = 0;
     //最大HP
     [SerializeField] private int MaxHP = 5;
     //自分自身のprefab名、BoxSpawnerにセットするよう
@@ -83,6 +87,9 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         //無敵時間の設定
         isGod = new TimeSpanFlag(300);
 
+        //Updateのタイミングを設定
+        isUpdate = new TimeSpanFlag(500);
+
         //HP設定
         HP = MaxHP;
 
@@ -91,17 +98,29 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
 
         //メッシュレンダラーを保持
         meshRenderer = GetMeshRenderer();
+
+        //初期化終了フラグを立てる
+        isInitialized = true;
     }
 
     private void Start()
     {
         InitializeBox();
         DisableIfNeeded();
+        OnEnable();
     }
 
     private void Update()
     {
-        FrustumCulling();
+        //FrustumCulling();
+        //Updateフラグが入っていたら
+        if (isUpdate)
+        {
+            //Updateフラグのタイマースタート
+            isUpdate.Begin();
+            //無効化するか処理
+            DisableIfNeeded();
+        }
     }
 
     private void OnDestroy()
@@ -118,6 +137,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
 
     private void OnEnable()
     {
+        if (!isInitialized) return;
         //隣接する6方向のBoxに対して通知
         for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
         {
@@ -131,13 +151,13 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     private void OnDisable()
     {
         //隣接する6方向のBoxに対して通知
-        for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
-        {
-            //隣接するBoxの取得
-            ChunkScript.BoxData affiliationBox = affiliationChunk?.GetAdjacentBox(gameObject, (ChunkScript.Direction)i);
-            //有効化通知
-            affiliationBox?.Script?.OnDisableNotification(ChunkScript.Direction.Bottom - i);
-        }
+        //for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
+        //{
+        //    //隣接するBoxの取得
+        //    ChunkScript.BoxData affiliationBox = affiliationChunk?.GetAdjacentBox(gameObject, (ChunkScript.Direction)i);
+        //    //有効化通知
+        //    affiliationBox?.Script?.OnDisableNotification(ChunkScript.Direction.Bottom - i);
+        //}
     }
 
     /// <summary>
@@ -181,9 +201,9 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
         {
             //隣接するBoxの取得
-            ChunkScript.BoxData affiliationBox = affiliationChunk.GetAdjacentBox(gameObject, (ChunkScript.Direction)i);
+            bool isExistAffiliationBox = affiliationChunk.IsAdjacetBoxExist(gameObject, (ChunkScript.Direction)i);
             //何もなければBoxが存在していないということ
-            if (affiliationBox is null)
+            if (isExistAffiliationBox == false)
             {
                 //無効化はしない
                 isAllAdjacetBoxActive = false;

@@ -14,7 +14,7 @@ public class GroundCheckScript : MonoBehaviour
     void Start()
     {
         parent = transform.parent.gameObject;
-        if (parent is null) Debug.Log("Nothing Parent : " + GetHashCode().ToString());
+        if (parent == null) Debug.Log("Nothing Parent : " + GetHashCode().ToString());
         isGround = false;
         isPreviousGround = false;
     }

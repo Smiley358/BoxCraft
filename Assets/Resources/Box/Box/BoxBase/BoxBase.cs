@@ -13,7 +13,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     {
         // 生成位置の変数の座標にブロックを生成
         GameObject madeBox = Instantiate(box, position, rotation);
-        if (madeBox is null)
+        if (madeBox == null)
         {
             return null;
         }
@@ -24,7 +24,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     {
         // 生成位置の変数の座標にブロックを生成
         GameObject madeBox = Instantiate(box, position, rotation);
-        if (madeBox is null)
+        if (madeBox == null)
         {
             return null;
         }

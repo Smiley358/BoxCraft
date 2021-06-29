@@ -6,6 +6,9 @@ using UnityEngine;
 
 public class ChunkScript : MonoBehaviour
 {
+    /// <summary>
+    /// Boxの方向
+    /// </summary>
     public enum Direction
     {
         First = 0,
@@ -38,6 +41,10 @@ public class ChunkScript : MonoBehaviour
         Max = BottomRightBehind
     }
 
+    /// <summary>
+    /// Boxがワールドのどこにいるのか
+    /// ブロック単位での座標
+    /// </summary>
     public struct Index3D
     {
         public int x;
@@ -76,6 +83,9 @@ public class ChunkScript : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// BoxのGameObjectとスクリプトをまとめたクラス
+    /// </summary>
     public class BoxData
     {
         public BoxBase Script { get; private set; }
@@ -88,6 +98,10 @@ public class ChunkScript : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ChunkScript.Direction番目の中身は
+    /// その方向へのオフセットになっている
+    /// <summary>
     public readonly int[][] DirectionOffset = new int[(int)Direction.Max + 1][]
     {
        new int[]{-1, 1, 1 },//上左前
@@ -118,8 +132,17 @@ public class ChunkScript : MonoBehaviour
        new int[]{-1,-1,-1 } //下右後
     };
 
+    /// <summary>
+    /// affiliationChunksフィールド用
+    /// 自分の位置
+    /// </summary>
     public readonly int[] DirectionOffsetCenter = new int[] { 1, 1, 1 };
 
+    /// <summary>
+    /// チャンクを生成する（重複での生成をブロックする機能付き）
+    /// </summary>
+    /// <param name="position">生成位置</param>
+    /// <returns>生成できていればGameObject、生成失敗でnull</returns>
     public static GameObject Create(Vector3 position)
     {
         //インデックスを計算
@@ -142,6 +165,11 @@ public class ChunkScript : MonoBehaviour
         return chunk;
     }
 
+    /// <summary>
+    /// 座標をワールドでのブロック単位の座標に変換する
+    /// </summary>
+    /// <param name="position">変換する座標</param>
+    /// <returns>ワールドでのブロック単位の座標</returns>
     public static Index3D CalcWorldIndex(Vector3 position)
     {
         Index3D index = new Index3D
@@ -183,7 +211,7 @@ public class ChunkScript : MonoBehaviour
     //生成するオブジェクト
     [SerializeField] private GameObject prefab;
 
-    void Start()
+    private void Start()
     {
         //チャンク内のBoxデータ配列
         chunkData = new BoxData[chunkSize, chunkSize, chunkSize];
@@ -196,13 +224,14 @@ public class ChunkScript : MonoBehaviour
         //中心座標
         center = transform.position;
 
-        //地形を生成
+        //地表チャンクであれば地形を生成
         if (worldIndex.y == 0)
         {
             StartCoroutine(GenerateTerrain());
         }
         else
         {
+            //地表チャンクでない場合地形生成完了フラグを入れておく
             IsTerrainGenerateCompleted = true;
         }
 
@@ -213,16 +242,35 @@ public class ChunkScript : MonoBehaviour
     private void Update()
     {
         //１０秒おきにPlayerからの距離を見て離れすぎていたら削除する
-        InvokeRepeating(nameof(DestroyIfNeeded), 0, 10);
+        InvokeRepeating(nameof(KillTimerSetIfNeeded), 0, 10);
+    }
+
+    private void OnDestroy()
+    {
+        //チャンクデータの初期化
+        for (int x = 0; x < chunkData.GetLength(0); x++)
+        {
+            for (int y = 0; y < chunkData.GetLength(1); y++)
+            {
+                for (int z = 0; z < chunkData.GetLength(2); z++)
+                {
+                    chunkData[x, y, z] = null;
+                }
+            }
+        }
     }
 
     private void OnTriggerEnter(Collider other)
     {
+        //Player空しか受け付けない
         if (other.name != "Player") return;
+        //自分自身にPlayerの移動通知
         PlayerMoveNotification();
 
+        //全方位分ループ
         for (int direction = (int)Direction.First; direction <= (int)Direction.Max; direction++)
         {
+            //隣接チャンクの座標を求める
             int x = DirectionOffset[direction][0] + DirectionOffsetCenter[0];
             int y = DirectionOffset[direction][1] + DirectionOffsetCenter[1];
             int z = DirectionOffset[direction][2] + DirectionOffsetCenter[2];
@@ -239,6 +287,7 @@ public class ChunkScript : MonoBehaviour
                     affiliationChunks[x, y, z] = ChunkManagerScript.chunks[index3D];
                 }
             }
+            //移動通知
             affiliationChunks[x, y, z]?.PlayerMoveNotification();
         }
     }
@@ -301,10 +350,12 @@ public class ChunkScript : MonoBehaviour
         IsTerrainGenerateCompleted = true;
     }
 
+    /// <summary>
+    /// 必要に応じて周辺にチャンクを生成して保持する
+    /// 同時にPlayerの移動通知を出す
+    /// </summary>
     private IEnumerator GenerateChunkIfNeeded()
     {
-        affiliationChunks ??= new ChunkScript[3, 3, 3];
-
         //Playerとの距離を確かめる
         float playerDistanceMax = chunkSize * far;
 
@@ -323,25 +374,33 @@ public class ChunkScript : MonoBehaviour
                 //全チャンクデータから探す
                 if (ChunkManagerScript.chunks.ContainsKey(index3D))
                 {
+                    //見つかったら保持
                     affiliationChunks[x, y, z] = ChunkManagerScript.chunks[index3D];
                 }
                 else
                 {
+                    //生成する座標を計算
                     Vector3 position = new Vector3(
                         DirectionOffset[direction][0] * chunkSize,
                         DirectionOffset[direction][1] * chunkSize,
                         DirectionOffset[direction][2] * chunkSize);
+                    //生成一のずれを補正
                     position += center;
+                    //Playerから離れ過ぎていたら生成しない
                     if (Vector3.Distance(position, Camera.main.transform.position) <= playerDistanceMax)
                     {
+                        //生成キューへ追加
                         ChunkManagerScript.CreateOrder(position);
+                        //生成が完了するまで待つ
                         while (true)
                         {
+                            //生成されていたとき
                             if (ChunkManagerScript.chunks.ContainsKey(index3D))
                             {
                                 affiliationChunks[x, y, z] = ChunkManagerScript.chunks[index3D];
                                 break;
                             }
+                            //生成失敗していたとき
                             else if (ChunkManagerScript.IsCreateFailed(index3D))
                             {
                                 break;
@@ -354,19 +413,28 @@ public class ChunkScript : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Playerがチャンクを移動したときに呼ばれる
+    /// </summary>
     private void PlayerMoveNotification()
     {
+        //キルタイマーが入っていたら
         if (IsKillTimerSet)
         {
             //削除タイマーをキャンセル
             CancelInvoke(nameof(DestroyThis));
             IsKillTimerSet = false;
         }
+        //必要に応じてチャンクの生成と近隣チャンクへ移動通知
         StartCoroutine(GenerateChunkIfNeeded());
-
     }
 
-    private void DestroyIfNeeded()
+    /// <summary>
+    /// チャンクの中心座標とPlayerが
+    /// chunkSize * far離れていた場合
+    /// キルタイマーを入れる
+    /// </summary>
+    private void KillTimerSetIfNeeded()
     {
         //Playerとの距離を確かめる
         float playerDistanceMax = chunkSize * far;
@@ -381,6 +449,11 @@ public class ChunkScript : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 自分を削除
+    /// 削除と一緒にデータベースからも消す
+    /// 参照エラー対策用
+    /// </summary>
     private void DestroyThis()
     {
         ChunkManagerScript.ForceDestroyChunk(gameObject);
@@ -449,15 +522,5 @@ public class ChunkScript : MonoBehaviour
 
         //Boxが存在しているかを返す
         return chunkData?[x, y, z] != null;
-    }
-
-
-
-    //エディターでデバッグ表示する用
-    private Color color = new Color(0, 1, 0);
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = color;
-        Gizmos.DrawWireCube(center, size);
     }
 }

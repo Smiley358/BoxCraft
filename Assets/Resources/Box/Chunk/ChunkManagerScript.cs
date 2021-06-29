@@ -4,10 +4,12 @@ using UnityEngine;
 
 public class ChunkManagerScript : MonoBehaviour
 {
+    //自分のインスタンス
     public static ChunkManagerScript Instance { get; private set; }
 
     void Awake()
     {
+        //インスタンスを代入
         Instance = this;
 
         //チャンクの生成キュー
@@ -28,12 +30,17 @@ public class ChunkManagerScript : MonoBehaviour
 
     //全チャンクデータ
     public static Dictionary<ChunkScript.Index3D, ChunkScript> chunks { get; private set; }
+    //作成失敗チャンクのオフセットリスト
     private static List<ChunkScript.Index3D> createFailedList;
     //チャンクの生成スタック
     private static Queue<Vector3> chunkCreateOrder;
     //チャンク生成フラグ
     private static bool isCreate;
 
+    /// <summary>
+    /// チャンクの生成キューに追加する
+    /// </summary>
+    /// <param name="position">生成座標</param>
     public static void CreateOrder(Vector3 position)
     {
         //プッシュ
@@ -43,14 +50,26 @@ public class ChunkManagerScript : MonoBehaviour
         CreateToOrder();
     }
 
+    /// <summary>
+    /// チャンクを消す
+    /// 参照エラー対策としてデータベースからも消す
+    /// </summary>
+    /// <param name="chunk"></param>
     public static void ForceDestroyChunk(GameObject chunk)
     {
+        if (chunk == null) return;
+
         //チャンクデータを一覧から消す
         chunks.Remove(chunk.GetComponent<ChunkScript>().worldIndex);
         //チャンクを削除
         Destroy(chunk);
     }
 
+    /// <summary>
+    /// 引数として渡された座標のチャンクが生成失敗しているか確認する
+    /// </summary>
+    /// <param name="index">失敗確認したい座標</param>
+    /// <returns>失敗していればtrue</returns>
     public static bool IsCreateFailed(ChunkScript.Index3D index)
     {
         if (createFailedList.Contains(index))
@@ -61,6 +80,9 @@ public class ChunkManagerScript : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// 順番にチャンクを作る
+    /// </summary>
     private static void CreateToOrder()
     {
         //生成中フラグがおりていたら
@@ -77,6 +99,11 @@ public class ChunkManagerScript : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// チャンクを作る
+    /// 地形の生成が終わるまで待つ
+    /// </summary>
+    /// <param name="position">生成座標</param>
     private static IEnumerator Create(Vector3 position)
     {
         isCreate = true;
@@ -85,7 +112,7 @@ public class ChunkManagerScript : MonoBehaviour
         //チャンク生成
         GameObject chunk = ChunkScript.Create(position);
 
-        if (chunk is null)
+        if (chunk == null)
         {
             //生成フラグを下す
             isCreate = false;

@@ -5,11 +5,11 @@ using System;
 public class ItemContentScript : MonoBehaviour
 {
     //浮遊移動のストローク
-    private static float FloatStroke = 0.1f;
+    [SerializeField] private static float FloatStroke = 0.1f;
     //生成された時間
-    private float startTime;
+    [SerializeField] private float startTime;
     //結合処理状況
-    private bool OnJoin;
+    [SerializeField] private bool OnJoin;
     //自分の親オブジェクト
     [NonSerialized] public ItemScript ParentScript;
 
@@ -17,6 +17,8 @@ public class ItemContentScript : MonoBehaviour
     {
         //生成された時間
         startTime = Time.time;
+        //親オブジェクトのスクリプトを保持
+        ParentScript ??= transform.parent.GetComponent<ItemScript>();
     }
  
     void Update()

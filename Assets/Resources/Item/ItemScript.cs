@@ -20,16 +20,10 @@ public class ItemScript : MonoBehaviour,IItemJoiner
 
     private static Action InitializeOnceDelegate = () =>
     {
-        ItemPrefab = Resources.Load("Item/Item") as GameObject;
-        ItemContentPrefab = Resources.Load("Item/ItemContent") as GameObject;
+        ItemPrefab = PrefabManager.Instance.GetPrefab("Item");
+        ItemContentPrefab = PrefabManager.Instance.GetPrefab("ItemContent");
         InitializeOnceDelegate = null;
     };
-
-    void Awake()
-    {
-        //一応初期化しておく
-        InitializeOnceDelegate?.Invoke();
-    }
 
     /// <summary>
     /// アイテムを生成する
@@ -38,7 +32,7 @@ public class ItemScript : MonoBehaviour,IItemJoiner
     /// <returns>生成できたかどうか</returns>
     public static bool Create(GameObject itemizeObject)
     {
-        //タイミング的に呼ばれていなかった時用
+        //初期化
         InitializeOnceDelegate?.Invoke();
 
         //アイテム化インターフェースを取得
@@ -75,29 +69,26 @@ public class ItemScript : MonoBehaviour,IItemJoiner
         //本来の名前に変更（"(Clone)"とゆう接尾辞を消す）
         itemContent.name = ItemContentPrefab.name;
         //メッシュの設定
-        itemContent.GetComponent<MeshFilter>().mesh = itemize.GetMeshFilter()?.mesh;
+        itemContent.GetComponent<MeshFilter>().mesh = itemize.GetMesh();
         //マテリアルの設定
-        itemContent.GetComponent<MeshRenderer>().material = itemize.GetMeshRenderer()?.material;
-        //親オブジェクトのスクリプトを設定
-        itemContent.GetComponent<ItemContentScript>().ParentScript = itemScript;
+        itemContent.GetComponent<MeshRenderer>().material = itemize.GetMaterial();
         return true;
     }
 
 
 
     //アイテムデータ
-    public InventoryItem ItemData { get; private set; }
+    [field: SerializeField] public InventoryItem ItemData { get; private set; }
     //中身
-    public GameObject Content { get; private set; }
+    [field: SerializeField] public GameObject Content { get; private set; }
     //中身の数
-    public int contentCount { get; private set; }
+    [field: SerializeField] public int contentCount { get; private set; }
     //移動速度
-    private float Speed = 2.5f;
+    [field: SerializeField] private float Speed = 2.5f;
     //リジッドボディ
-    private Rigidbody ownRigidbody;
+    [field: SerializeField] private Rigidbody ownRigidbody;
     //移動べクトル
-    private Vector3 moveVelocity;
-
+    [field: SerializeField] private Vector3 moveVelocity;
 
     void Start()
     {
@@ -120,12 +111,8 @@ public class ItemScript : MonoBehaviour,IItemJoiner
 
         //リジッドボディを保持
         ownRigidbody = GetComponent<Rigidbody>();
-    }
-
-    private void Update()
-    {
         //本体を回転させない
-        transform.rotation = Quaternion.Euler(Vector3.zero);
+        ownRigidbody.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ | RigidbodyConstraints.FreezeRotationY;
     }
 
     void FixedUpdate()
@@ -147,9 +134,6 @@ public class ItemScript : MonoBehaviour,IItemJoiner
 
         //別のアイテムへの方向
         Vector3 targetVector = (other.transform.position - transform.position).normalized;
-        //Y軸は何もしない
-        //targetVector.Scale(new Vector3(1, 0, 1));
-        //targetVector.y = ownRigidbody.velocity.y;
 
         //ターゲットが現在の進行方向と大きく外れる場合処理しない
         if (Vector3.Angle(moveVelocity, targetVector) >= 90.0f) return;

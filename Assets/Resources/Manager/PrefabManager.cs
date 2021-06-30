@@ -17,7 +17,8 @@ public class PrefabData
 
 public class PrefabManager  :MonoBehaviour
 {
-    [SerializeField] private List<PrefabData> prefabs;
+    [SerializeField] private List<PrefabData> prefabData;
+    [SerializeField] private List<GameObject> prefabs;
 
     public static PrefabManager Instance { get; private set; }
 
@@ -29,7 +30,9 @@ public class PrefabManager  :MonoBehaviour
 
     public GameObject GetPrefab(string prefabName)
     {
-        PrefabData containt = prefabs.Find(flagment => flagment.Name == prefabName);
-        return containt?.Prefab;
+        //PrefabData containt = prefabData.Find(flagment => flagment.Name == prefabName);
+        //return containt?.Prefab;
+        GameObject prefab = prefabs.Find(flagment => flagment.name == prefabName);
+        return prefab;
     }
 }

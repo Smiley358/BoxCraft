@@ -9,26 +9,25 @@ using UnityEngine;
 /// </summary>
 public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
 {
-    public static GameObject Create(GameObject box, Vector3 position, Quaternion rotation)
-    {
-        // 生成位置の変数の座標にブロックを生成
-        GameObject madeBox = Instantiate(box, position, rotation);
-        if (madeBox == null)
-        {
-            return null;
-        }
-        return madeBox;
-    }
-
+    /// <summary>
+    /// Boxを生成して所属チャンクをセットする
+    /// </summary>
+    /// <param name="chunk">所属チャンク</param>
+    /// <param name="box">prefab</param>
+    /// <param name="position">生成座標</param>
+    /// <param name="rotation">回転</param>
+    /// <returns>生成したBox</returns>
     public static GameObject Create(ChunkScript chunk, GameObject box, Vector3 position, Quaternion rotation)
     {
+        //チャンクに所属しないBoxは許可しない
+        if (chunk is null) return null;
         // 生成位置の変数の座標にブロックを生成
         GameObject madeBox = Instantiate(box, position, rotation);
         if (madeBox == null)
         {
             return null;
         }
-        madeBox.GetComponent<BoxBase>().affiliationChunk = chunk;
+        madeBox.GetComponent<BoxBase>().parentChunk = chunk;
         return madeBox;
     }
 
@@ -40,14 +39,12 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     protected bool isInitialized;
     //無敵時間かどうか
     protected TimeSpanFlag isGod;
-    //処理をするかどうか
-    protected TimeSpanFlag isUpdate;
     //コライダー
     protected Collider boxCollider;
     //メッシュレンダラー
     protected MeshRenderer meshRenderer;
     //所属チャンク
-    protected ChunkScript affiliationChunk;
+    protected ChunkScript parentChunk;
     //HP
     [field: SerializeField] public int HP { get; protected set; } = 0;
     //最大HP
@@ -59,7 +56,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
 
     protected void InitializeBox()
     {
-        //戦闘の(Clone)を消して、Editorから追加したときに出る後ろの数字を消す
+        //先頭の(Clone)を消して、Editorから追加したときに出る後ろの数字を消す
         gameObject.name = gameObject.name.Replace("(Clone)", "").Split(' ')[0];
         ItemData.ItemName = gameObject.name;
         ItemData.ItemIcon = itemIcon;
@@ -87,9 +84,6 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         //無敵時間の設定
         isGod = new TimeSpanFlag(300);
 
-        //Updateのタイミングを設定
-        isUpdate = new TimeSpanFlag(500);
-
         //HP設定
         HP = MaxHP;
 
@@ -97,7 +91,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         boxCollider = GetComponent<Collider>();
 
         //メッシュレンダラーを保持
-        meshRenderer = GetMeshRenderer();
+        meshRenderer = GetComponent<MeshRenderer>();
 
         //初期化終了フラグを立てる
         isInitialized = true;
@@ -106,21 +100,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     private void Start()
     {
         InitializeBox();
-        DisableIfNeeded();
-        OnEnable();
-    }
-
-    private void Update()
-    {
-        //FrustumCulling();
-        //Updateフラグが入っていたら
-        if (isUpdate)
-        {
-            //Updateフラグのタイマースタート
-            isUpdate.Begin();
-            //無効化するか処理
-            DisableIfNeeded();
-        }
+        Invoke(nameof(DisableIfNeeded), 5);
     }
 
     private void OnDestroy()
@@ -129,7 +109,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
         {
             //隣接するBoxの取得
-            ChunkScript.BoxData affiliationBox = affiliationChunk?.GetAdjacentBox(gameObject, (ChunkScript.Direction)i);
+            ChunkScript.BoxData affiliationBox = parentChunk?.GetAdjacentBox(gameObject, (ChunkScript.Direction)i);
             //有効化通知
             affiliationBox?.Script?.OnDestroyNotification(ChunkScript.Direction.Bottom - i);
         }
@@ -142,7 +122,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
         {
             //隣接するBoxの取得
-            ChunkScript.BoxData affiliationBox = affiliationChunk?.GetAdjacentBox(gameObject, (ChunkScript.Direction)i);
+            ChunkScript.BoxData affiliationBox = parentChunk?.GetAdjacentBox(gameObject, (ChunkScript.Direction)i);
             //有効化通知
             affiliationBox?.Script?.OnEnableNotification(ChunkScript.Direction.Bottom - i);
         }
@@ -184,8 +164,8 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     /// <param name="direction">自分から見た通知者の方向</param>
     private void OnDestroyNotification(ChunkScript.Direction direction)
     {
-        //自分が無効化されていたら自分は無効化する
-        if (!gameObject.activeSelf)
+        //自分が無効化されていたら自分を有効化する
+        if (!(gameObject?.activeSelf ?? false))
         {
             gameObject.SetActive(true);
         }
@@ -201,7 +181,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
         {
             //隣接するBoxの取得
-            bool isExistAffiliationBox = affiliationChunk.IsAdjacetBoxExist(gameObject, (ChunkScript.Direction)i);
+            bool isExistAffiliationBox = parentChunk?.IsAdjacetBoxExist(gameObject, (ChunkScript.Direction)i) ?? false;
             //何もなければBoxが存在していないということ
             if (isExistAffiliationBox == false)
             {
@@ -296,8 +276,11 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     //Implementation from Interface:IAttackableObject
     public virtual void OnAttack(in GameObject attacker)
     {
+        //無敵時間中は何もしない
         if (isGod) return;
+        //無敵タイマー開始
         isGod.Begin();
+        //HPカウントダウン
         HP--;
 
         if (HP > 0) return;
@@ -305,7 +288,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         bool isCreate = ItemScript.Create(gameObject);
         if (isCreate)
         {
-            affiliationChunk.DestroyBox(gameObject);
+            parentChunk.DestroyBox(gameObject);
         }
     }
 
@@ -316,14 +299,20 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     }
 
     //Implementation from Interface:IItemizeObject
-    public virtual MeshFilter GetMeshFilter()
+    public virtual Mesh GetMesh()
     {
-        return GetComponent<MeshFilter>();
+        return GetComponent<MeshFilter>().mesh;
     }
 
     //Implementation from Interface:IItemizeObject
-    public virtual MeshRenderer GetMeshRenderer()
+    public virtual Material GetMaterial()
     {
-        return meshRenderer ?? GetComponent<MeshRenderer>();
+        return GetComponent<MeshRenderer>().material;
+    }
+
+    //Implementation from Interface:IItemizeObject
+    public virtual Vector3 GetMeshScale()
+    {
+        return Vector3.one;
     }
 }

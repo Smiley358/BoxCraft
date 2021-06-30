@@ -8,6 +8,7 @@ using UnityEngine;
 public interface IItemizeObject
 {
     InventoryItem GetItemData();
-    MeshFilter GetMeshFilter();
-    MeshRenderer GetMeshRenderer();
+    Mesh GetMesh();
+    Material GetMaterial();
+    Vector3 GetMeshScale();
 }

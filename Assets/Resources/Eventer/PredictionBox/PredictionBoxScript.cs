@@ -33,7 +33,7 @@ public class PredictionBoxScript : MonoBehaviour
 
         if (renderBoxMaterial == null)
         {
-            renderBoxMaterial = renderBoxScript?.GetMeshRenderer()?.material;
+            renderBoxMaterial = renderBoxScript?.GetMaterial();
             if (renderBoxMaterial == null) return;
         }
 
@@ -134,7 +134,7 @@ public class PredictionBoxScript : MonoBehaviour
         //当たり判定を無効化
         renderBoxScript?.DisableCollition();
         //シェーダーをFadeに
-        renderBoxMaterial = renderBoxScript?.GetMeshRenderer()?.material;
+        renderBoxMaterial = renderBoxScript?.GetMaterial();
         if (renderBoxMaterial != null)
         {
             renderBoxMaterial.SetOverrideTag("RenderType", "Transparent");

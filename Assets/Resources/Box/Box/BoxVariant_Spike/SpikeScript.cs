@@ -16,14 +16,20 @@ public class SpikeScript : BoxBase
     }
 
     //Implementation from Interface:IItemizeObject
-    public override MeshFilter GetMeshFilter()
+    public override Mesh GetMesh()
     {
-        return gameObject.transform.Find("Mesh")?.GetComponent<MeshFilter>();
+        return gameObject.transform.Find("Mesh")?.GetComponent<MeshFilter>().mesh;
     }
 
     //Implementation from Interface:IItemizeObject
-    public override MeshRenderer GetMeshRenderer()
+    public override Material GetMaterial()
     {
-        return gameObject.transform.Find("Mesh")?.GetComponent<MeshRenderer>();
+        return gameObject.transform.Find("Mesh")?.GetComponent<MeshRenderer>().material;
+    }
+
+    //Implementation from Interface:IItemizeObject
+    public override Vector3 GetMeshScale()
+    {
+        return gameObject.transform.Find("Mesh")?.transform.localScale ?? Vector3.one;
     }
 }

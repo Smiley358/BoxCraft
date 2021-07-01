@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
+using JsonConverter.ChunkJsonConverter;
 using UnityEngine;
 
 public class ChunkScript : MonoBehaviour
@@ -45,7 +47,7 @@ public class ChunkScript : MonoBehaviour
     /// Boxがワールドのどこにいるのか
     /// ブロック単位での座標
     /// </summary>
-    public struct Index3D
+    [Serializable] public struct Index3D
     {
         public int x;
         public int y;
@@ -57,7 +59,7 @@ public class ChunkScript : MonoBehaviour
         /// <param name="min">最小値（レンジ内で最小の値）</param>
         /// <param name="max">最大値（レンジ内で最大の値）</param>
         /// <returns>レンジ内ならTrue</returns>
-        public bool IsFitIntoRange(int min,int max)
+        public bool IsFitIntoRange(int min, int max)
         {
             return (x >= min) && (x <= max) && (y >= min) && (y <= max) && (z >= min) && (z <= max);
         }
@@ -235,13 +237,13 @@ public class ChunkScript : MonoBehaviour
         //チャンクを取得
         ChunkScript chunk = ChunkManagerScript.chunks[index];
         //ローカル座標を計算
-        Vector3 localPosition = (chunk.transform.position - position + new Vector3(chunkSize / 2, chunkSize / 2, chunkSize / 2)) / boxSize;
+        Vector3 localPosition = (position - chunk.transform.position);
         //ローカルインデックスを計算
         Index3D localIndex = new Index3D
             (
-                (int)(Mathf.Floor(localPosition.x / boxSize)),
-                (int)(Mathf.Floor(localPosition.y / boxSize)),
-                (int)(Mathf.Floor(localPosition.z / boxSize))
+                (int)(Mathf.Floor(localPosition.x + (chunkSize / 2 - boxSize / 2))),
+                (int)(Mathf.Floor(localPosition.y + (chunkSize / 2 - boxSize / 2))),
+                (int)(Mathf.Floor(localPosition.z + (chunkSize / 2 - boxSize / 2)))
             );
         //範囲外なら作らない
         if (!localIndex.IsFitIntoRange(0, chunkSize - 1)) return null;
@@ -250,24 +252,38 @@ public class ChunkScript : MonoBehaviour
 
         //ここまで来たらつくる
         GameObject box = BoxBase.Create(chunk, prefab, position, rotation);
-        //チャンクに追加
-        chunk.chunkData[localIndex.x, localIndex.y, localIndex.z] = new BoxData(box, box.GetComponent<BoxBase>());
         //チャンクを親に
         box.transform.parent = chunk.transform;
+        //チャンクに追加
+        chunk.boxDatas[localIndex.x, localIndex.y, localIndex.z] = new BoxData(box, box.GetComponent<BoxBase>());
+
+        //チャンクですでに変更が行われているか取得
+        BoxSaveData change = chunk.changes.Find(data => data.Index == localIndex);
+        //変更があれば削除
+        chunk.changes.Remove(change);
+        //生成するBoxが自動生成と同じものであれば保持しない
+        if (chunk.boxGenerateData[localIndex.x, localIndex.y, localIndex.z] != prefab.name)
+        {
+            //追加
+            chunk.changes.Add(new BoxSaveData(prefab.name, localIndex, box.transform.rotation));
+        }
 
         return box;
     }
 
     //チャンクの一辺のサイズ
-    private const int chunkSize = 64;
+    private const int chunkSize = 32;
     //Boxのサイズ
     private const float boxSize = 1;
     //自動生成距離
-    private const float far = 1f;
+    private const int far = 1;
     //ノイズ解像度（平行）
     private const float mapResolutionHorizontal = 50.0f;
     //ノイズ解像度（垂直）
     private const float mapResolutionVertical = 25.0f;
+
+    //Playerのいるインデックス
+    private static Index3D PlayerIndex;
 
     //初期化完了フラグ
     public bool IsTerrainGenerateCompleted { get; private set; }
@@ -276,10 +292,14 @@ public class ChunkScript : MonoBehaviour
     //チャンクの配列インデックス
     public Index3D worldIndex { get; private set; }
 
-    //チャンク内のBoxデータ
-    private BoxData[,,] chunkData;
     //隣接チャンク
     private ChunkScript[,,] affiliationChunks;
+    //チャンク内のBoxデータ
+    private BoxData[,,] boxDatas;
+    //Boxの生成データ
+    private string[,,] boxGenerateData;
+    //Boxに対する変更点
+    [SerializeField] private List<BoxSaveData> changes;
 
     //チャンクのX,Y,Zサイズ
     [SerializeField] private Vector3 size;
@@ -291,7 +311,16 @@ public class ChunkScript : MonoBehaviour
     private void Start()
     {
         //チャンク内のBoxデータ配列
-        chunkData = new BoxData[chunkSize, chunkSize, chunkSize];
+        boxDatas = new BoxData[chunkSize, chunkSize, chunkSize];
+        //チャンク内に生成したBoxのデータ
+        boxGenerateData = new string[chunkSize, chunkSize, chunkSize];
+        //チャンクの変更点データをロード
+        ChunkSaveData load = Converter.LoadSaveData(worldIndex);
+        //セーブデータがあれば保持
+        if ((load != null) && load.Changes != null)
+        {
+            changes.AddRange(load?.Changes);
+        }
 
         //隣接チャンク
         affiliationChunks ??= new ChunkScript[3, 3, 3];
@@ -304,17 +333,8 @@ public class ChunkScript : MonoBehaviour
         //コライダーのサイズをセット
         GetComponent<BoxCollider>().size = size;
 
-        //地表チャンクであれば地形を生成
-        if (worldIndex.y == 0)
-        {
-            //地形生成
-            StartCoroutine(GenerateTerrain());
-        }
-        else
-        {
-            //地表チャンクでない場合地形生成完了フラグを入れておく
-            IsTerrainGenerateCompleted = true;
-        }
+        //地形生成
+        StartCoroutine(GenerateTerrain());
 
         //近くのチャンクを生成
         StartCoroutine(GenerateChunkIfNeeded());
@@ -326,15 +346,28 @@ public class ChunkScript : MonoBehaviour
     private void OnDestroy()
     {
         //チャンクデータの初期化
-        for (int x = 0; x < chunkData.GetLength(0); x++)
+        for (int x = 0; x < boxDatas.GetLength(0); x++)
         {
-            for (int y = 0; y < chunkData.GetLength(1); y++)
+            for (int y = 0; y < boxDatas.GetLength(1); y++)
             {
-                for (int z = 0; z < chunkData.GetLength(2); z++)
+                for (int z = 0; z < boxDatas.GetLength(2); z++)
                 {
-                    chunkData[x, y, z] = null;
+                    boxDatas[x, y, z] = null;
                 }
             }
+        }
+
+        //チャンクデータの保存
+        Converter.UpdateSavedata(worldIndex, changes);
+
+        //隣接チャンクに破壊通知
+        for (int direction = (int)Direction.First; direction <= (int)Direction.Max; direction++)
+        {
+            int x = DirectionOffset[direction][X] + DirectionOffsetCenter[X];
+            int y = DirectionOffset[direction][Y] + DirectionOffsetCenter[Y];
+            int z = DirectionOffset[direction][Z] + DirectionOffsetCenter[Z];
+
+            affiliationChunks?[x, y, z]?.DestroyNotification(Direction.Max - direction);
         }
     }
 
@@ -344,6 +377,8 @@ public class ChunkScript : MonoBehaviour
         if (other.name != "Player") return;
         //自分自身にPlayerの移動通知
         PlayerMoveNotification();
+        //Playerのインデックスを自分に
+        PlayerIndex = worldIndex;
 
         //全方位分ループ
         for (int direction = (int)Direction.First; direction <= (int)Direction.Max; direction++)
@@ -370,27 +405,12 @@ public class ChunkScript : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Boxを指定された３次元インデックスの場所に生成できるかどうか
-    /// </summary>
-    /// <param name="index">Boxを生成したい場所</param>
-    /// <returns></returns>
-    public bool CanSpawnBox(Index3D index)
+    private void OnDrawGizmos()
     {
-        return index.IsFitIntoRange(0,chunkSize) && (chunkData[index.x, index.y, index.z] == null);
-    }
-
-    /// <summary>
-    /// Boxを削除
-    /// </summary>
-    /// <param name="box"></param>
-    public void DestroyBox(GameObject box)
-    {
-        int x = (int)Mathf.Floor(box.transform.localPosition.x + (chunkSize / 2 - boxSize / 2));
-        int y = (int)Mathf.Floor(box.transform.localPosition.y + (chunkSize / 2 - boxSize / 2));
-        int z = (int)Mathf.Floor(box.transform.localPosition.z + (chunkSize / 2 - boxSize / 2));
-        chunkData[x, y, z] = null;
-        Destroy(box);
+        //境目が分からないのでデバッグ表示
+        if (worldIndex.y != 0) return;
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireCube(center, size);
     }
 
     /// <summary>
@@ -398,6 +418,14 @@ public class ChunkScript : MonoBehaviour
     /// </summary>
     private IEnumerator GenerateTerrain()
     {
+        //地表でなければ
+        if (worldIndex.y != 0)
+        {
+            //地形生成完了フラグを立てる
+            IsTerrainGenerateCompleted = true;
+            yield break;
+        }
+
         //バウンディングボックスのX,Y,Z起点位置までのオフセット
         Vector3 offset = size / 2 - center;
 
@@ -411,25 +439,57 @@ public class ChunkScript : MonoBehaviour
                 float noise = Mathf.PerlinNoise(
                     (transform.position.x + x) / mapResolutionHorizontal,
                     (transform.position.z + z) / mapResolutionHorizontal);
-                //一番上の位置
+                //地形の一番上の位置
                 int top = (int)Mathf.Round(mapResolutionVertical * noise);
                 //最低面から一番上のBoxまでを埋める
-                for (int y = 0; y < top; y++)
+                for (int y = 0; y < chunkSize; y++)
                 {
-                    //生成
-                    GameObject box = BoxBase.Create(
-                        this,
-                        prefab,
-                        new Vector3(
-                        boxSize * x + boxSize / 2.0f - offset.x,
-                        boxSize * y + boxSize / 2.0f - offset.y,
-                        boxSize * z + boxSize / 2.0f - offset.z),
-                        Quaternion.identity);
-                    //親に設定
-                    box.transform.parent = gameObject.transform;
+                    //生成予定の場所に変更点があるか取得
+                    BoxSaveData change = changes.Find(data => data.Index == new Index3D(x, y, z));
+                    GameObject createPrefab = null;
+                    //yがtopより小さい時
+                    if (y < top)
+                    {
+                        //通常生成のprefabを入れておく
+                        createPrefab = prefab;
+                        //地形自動生成のデータのみ保持
+                        boxGenerateData[x, y, z] = prefab.name;
+                    }
 
-                    //データを保存
-                    chunkData[x, y, z] = new BoxData(box, box.GetComponent<BoxBase>());
+                    //変更点があったら
+                    if (change != null)
+                    {
+                        //Nameがあれば何か置かれている
+                        if (change.Name.Length > 0)
+                        {
+                            //変更されたBoxのprefabをロード
+                            createPrefab = PrefabManager.Instance.GetPrefab(change.Name);
+                        }
+                        else
+                        {
+                            //Boxの削除データだったときなので何も生成しない
+                            createPrefab = null;
+                        }
+                    }
+
+                    //createPrefabがnullでなければ自動生成かセーブデータからの生成
+                    if (createPrefab != null)
+                    {
+                        //生成
+                        GameObject box = BoxBase.Create(
+                            this,
+                            createPrefab,
+                            new Vector3(
+                            boxSize * x + boxSize / 2.0f - offset.x,
+                            boxSize * y + boxSize / 2.0f - offset.y,
+                            boxSize * z + boxSize / 2.0f - offset.z),
+                            Quaternion.identity);
+                        //親に設定
+                        box.transform.parent = gameObject.transform;
+
+                        //データを保存
+                        boxDatas[x, y, z] = new BoxData(box, box.GetComponent<BoxBase>());
+                    }
                 }
             }
             yield return null;
@@ -444,9 +504,6 @@ public class ChunkScript : MonoBehaviour
     /// </summary>
     private IEnumerator GenerateChunkIfNeeded()
     {
-        //Playerとの距離を確かめる
-        float playerDistanceMax = chunkSize * far;
-
         for (int direction = (int)Direction.First; direction <= (int)Direction.Max; direction++)
         {
             int x = DirectionOffset[direction][X] + DirectionOffsetCenter[X];
@@ -456,9 +513,15 @@ public class ChunkScript : MonoBehaviour
             //チャンクがなかったら
             if (affiliationChunks?[x, y, z] is null)
             {
-                Vector3 offset = new Vector3(DirectionOffset[direction][X], DirectionOffset[direction][Y], DirectionOffset[direction][Z]);
-                offset *= chunkSize;
-                Index3D index3D = CalcWorldIndex(center + offset);
+                //自座標から生成座標へのオフセット
+                Vector3 offset = new Vector3(
+                    DirectionOffset[direction][X], 
+                    DirectionOffset[direction][Y], 
+                    DirectionOffset[direction][Z]) * chunkSize;
+                //生成する座標
+                Vector3 position = center + offset;
+                //生成するインデックス
+                Index3D index3D = CalcWorldIndex(position);
                 //全チャンクデータから探す
                 if (ChunkManagerScript.chunks.ContainsKey(index3D))
                 {
@@ -467,15 +530,8 @@ public class ChunkScript : MonoBehaviour
                 }
                 else
                 {
-                    //生成する座標を計算
-                    Vector3 position = new Vector3(
-                        DirectionOffset[direction][Z] * chunkSize,
-                        DirectionOffset[direction][Y] * chunkSize,
-                        DirectionOffset[direction][Z] * chunkSize);
-                    //生成一のずれを補正
-                    position += center;
-                    //Playerから離れ過ぎていたら生成しない
-                    if (Vector3.Distance(position, Camera.main.transform.position) <= playerDistanceMax)
+                    //Playerから離れすぎていなければ
+                    if (IsFitIntoFar(index3D))
                     {
                         //生成キューへ追加
                         ChunkManagerScript.CreateOrder(position);
@@ -519,6 +575,19 @@ public class ChunkScript : MonoBehaviour
     }
 
     /// <summary>
+    /// 周辺チャンクが削除された際に呼ばれる
+    /// </summary>
+    /// <param name="direction"></param>
+    private void DestroyNotification(Direction direction)
+    {
+        int x = DirectionOffset[(int)direction][X] + DirectionOffsetCenter[X];
+        int y = DirectionOffset[(int)direction][Y] + DirectionOffsetCenter[Y];
+        int z = DirectionOffset[(int)direction][Z] + DirectionOffsetCenter[Z];
+
+        affiliationChunks[x, y, z] = null;
+    }
+
+    /// <summary>
     /// チャンクの中心座標とPlayerが
     /// chunkSize * far離れていた場合
     /// キルタイマーを入れる
@@ -528,11 +597,8 @@ public class ChunkScript : MonoBehaviour
         //キルタイマーが入っているときは処理しない
         if (IsKillTimerSet) return;
 
-        //Playerとの距離を確かめる
-        float playerDistanceMax = chunkSize * far;
-
-        //Playerと離れすぎている
-        if (Vector3.Distance(Camera.main.transform.position, transform.position) >= playerDistanceMax)
+        //Playerと離れすぎていれば
+        if (!IsFitIntoFar(worldIndex))
         {
             //削除予約
             Debug.Log("Kill Timer Begin: " + worldIndex.ToString());
@@ -549,6 +615,25 @@ public class ChunkScript : MonoBehaviour
     private void DestroyThis()
     {
         ChunkManagerScript.ForceDestroyChunk(gameObject);
+    }
+
+    /// <summary>
+    /// Playerからの最大距離内にいるかどうか
+    /// </summary>
+    /// <param name="index">確認したいインデックス</param>
+    /// <returns>範囲内ならTrue</returns>
+    private bool IsFitIntoFar(Index3D index)
+    {
+        //indexからplayerまでのXYZの各距離
+        Index3D distance = PlayerIndex - index;
+        //全てfarより近ければいい
+        if ((Math.Abs(distance.x) <= far) &&
+            (Math.Abs(distance.y) <= far) &&
+            (Math.Abs(distance.z) <= far))
+        {
+            return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -577,7 +662,7 @@ public class ChunkScript : MonoBehaviour
             if (z >= chunkSize || z < 0) return null;
 
             //Boxが存在しているかを返す
-            return chunkData?[x, y, z];
+            return boxDatas?[x, y, z];
         }
         catch
         {
@@ -613,6 +698,46 @@ public class ChunkScript : MonoBehaviour
         if (z >= chunkSize || z < 0) return true;
 
         //Boxが存在しているかを返す
-        return chunkData?[x, y, z] != null;
+        return boxDatas?[x, y, z] != null;
+    }
+
+    /// <summary>
+    /// Boxを指定された３次元インデックスの場所に生成できるかどうか
+    /// </summary>
+    /// <param name="index">Boxを生成したい場所</param>
+    /// <returns></returns>
+    public bool CanSpawnBox(Index3D index)
+    {
+        return index.IsFitIntoRange(0, chunkSize) && (boxDatas[index.x, index.y, index.z] == null);
+    }
+
+    /// <summary>
+    /// Boxを削除
+    /// </summary>
+    /// <param name="box"></param>
+    public void DestroyBox(GameObject box)
+    {
+        //インデックスの計算
+        Index3D index = new Index3D(
+                                (int)Mathf.Floor(box.transform.localPosition.x + (chunkSize / 2 - boxSize / 2)),
+                                (int)Mathf.Floor(box.transform.localPosition.y + (chunkSize / 2 - boxSize / 2)),
+                                (int)Mathf.Floor(box.transform.localPosition.z + (chunkSize / 2 - boxSize / 2))
+                            );
+        //保持データを消す
+        boxDatas[index.x, index.y, index.z] = null;
+        //削除
+        Destroy(box);
+
+
+        //チャンクですでに変更が行われているか取得
+        BoxSaveData change = changes.Find(data => data.Index == index);
+        //変更があれば削除
+        changes.Remove(change);
+        //生成時に何もなかったところであれば変更を保持しない
+        if (!string.IsNullOrEmpty(boxGenerateData[index.x, index.y, index.z]))
+        {
+            //追加
+            changes.Add(new BoxSaveData("", index, box.transform.rotation));
+        }
     }
 }

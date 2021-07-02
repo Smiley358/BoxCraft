@@ -154,7 +154,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   clips:
-  - Clip: {fileID: 8300000, guid: 798575cfd3732c046b089be25a5494d8, type: 3}
+  - Clip: {fileID: 8300000, guid: 9aa4056eb98f708459d88234bfff6623, type: 3}
+  - Clip: {fileID: 8300000, guid: 07ede934e46f5ff4499a2865c3612ea5, type: 3}
+  - Clip: {fileID: 8300000, guid: cf764ada16df53542a3501bb9610f20c, type: 3}
+  - Clip: {fileID: 8300000, guid: f3cc32050b6ed004a88c701c17f7a6e3, type: 3}
 --- !u!4 &69439019
 Transform:
   m_ObjectHideFlags: 0
@@ -782,6 +785,7 @@ MonoBehaviour:
   - {fileID: 7795402916297582889, guid: c9619be5b45e8364a94caf50c31324cc, type: 3}
   - {fileID: 141709991351215720, guid: f88d7c491a56e104e8bf903f52d63cb4, type: 3}
   - {fileID: 2304420515678362179, guid: 62f5d8787fb580142b5d55a5c58129d9, type: 3}
+  - {fileID: 2294039353975956717, guid: 573bbf75b76cb6248a5ca8b52d0ed063, type: 3}
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0

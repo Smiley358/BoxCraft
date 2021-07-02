@@ -30,6 +30,8 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
     private Vector3 ViewVector;
     //PlayerのRigidbody
     private Rigidbody playerRigidbody;
+    //攻撃可能フラグ
+    private TimeSpanFlag isAttacking;
     //移動速度
     [SerializeField] private float speed;
     //ダッシュ速度
@@ -39,11 +41,18 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
     //ジャンプ力
     [SerializeField] private float jumpPower;
 
-    void Start()
+    private void Awake()
     {
         //初期視点
         ViewVector = new Vector3(1.0f, 0.0f, 0.0f);
+        //最初は空中判定
         IsGround = false;
+        //攻撃フラグ
+        isAttacking = new TimeSpanFlag(350);
+    }
+
+    void Start()
+    {
         //Rigidbody取得
         playerRigidbody = GetComponent<Rigidbody>() ?? throw new PlayerInitializeFailException(paramName: nameof(playerRigidbody), message: "playerRigidbody cannot be null");
     }
@@ -63,6 +72,26 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
             nowVec = Vector3.up;
             ViewVector += nowVec.normalized * mouse.y;
             ViewVector.Normalize();
+
+            //攻撃判定
+            if (!isAttacking && Input.GetMouseButton(0))
+            {
+                //攻撃判定開始
+                isAttacking.Begin();
+
+                //レイがあたったオブジェクト
+                GameObject hitGameObject = RaycastManager.RaycastHitObject.collider?.gameObject;
+                if (hitGameObject != null)
+                {
+                    //レイがあたったオブジェクトに攻撃判定
+                    EXAttackableObject.AttackNotification(gameObject, hitGameObject);
+                }
+                else
+                {
+                    //空振り音を再生
+                    SoundEmitter.FindClip("missing")?.Play();
+                }
+            }
         }
 
 
@@ -108,18 +137,6 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
 
         //カメラとプレイヤーの視点設定
         LookAtSet();
-
-        //攻撃判定
-        if (Input.GetMouseButton(0))
-        {
-            //レイがあたったオブジェクト
-            GameObject hitGameObject = RaycastManager.RaycastHitObject.collider?.gameObject;
-            if (hitGameObject != null)
-            {
-                //レイがあたったオブジェクトに攻撃判定
-                EXAttackableObject.AttackNotification(gameObject, hitGameObject);
-            }
-        }
     }
 
     private void OnTriggerEnter(Collider other)

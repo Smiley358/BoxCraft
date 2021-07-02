@@ -47,7 +47,7 @@ MonoBehaviour:
   changes: []
   size: {x: 0, y: 0, z: 0}
   center: {x: 0, y: 0, z: 0}
-  prefab: {fileID: 495303403275808712, guid: 6222666c876b3194691db446ff96d4ce, type: 3}
+  prefab: {fileID: 2294039353975956717, guid: 573bbf75b76cb6248a5ca8b52d0ed063, type: 3}
 --- !u!65 &1296756499475754707
 BoxCollider:
   m_ObjectHideFlags: 0

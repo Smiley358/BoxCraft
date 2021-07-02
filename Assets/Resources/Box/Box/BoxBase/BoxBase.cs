@@ -272,6 +272,22 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         }
     }
 
+    /// <summary>
+    /// 壊されたときの効果音を再生
+    /// </summary>
+    protected virtual void PlaySEBreak()
+    {
+        SoundEmitter.FindClip("break_stone")?.Play();
+    }
+
+    /// <summary>
+    /// 攻撃を受けた時の効果音を再生
+    /// </summary>
+    protected virtual void PlaySEOnAttack()
+    {
+        SoundEmitter.FindClip("dig_stone")?.Play();
+    }
+
 
     //Implementation from Interface:IAttackableObject
     public virtual void OnAttack(in GameObject attacker)
@@ -283,8 +299,21 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         //HPカウントダウン
         HP--;
 
-        if (HP > 0) return;
+        //HPがなくなった？
+        if (HP > 0)
+        {
+            //攻撃時の音を出す
+            PlaySEOnAttack();
+            //壊れてないので処理はここまで
+            return;
+        }
+        else
+        {
+            //破壊時の音を出す
+            PlaySEBreak();
+        }
 
+        //以下破壊処理
         bool isCreate = ItemScript.Create(gameObject);
         if (isCreate)
         {

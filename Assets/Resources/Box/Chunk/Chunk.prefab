@@ -44,9 +44,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 712d0813d28afc644a841fe0c4031e6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  changes: []
   size: {x: 0, y: 0, z: 0}
   center: {x: 0, y: 0, z: 0}
-  prefab: {fileID: 4774965842175194969, guid: 628bb25721d449b41bbe077dfab86177, type: 3}
+  prefab: {fileID: 2294039353975956717, guid: 573bbf75b76cb6248a5ca8b52d0ed063, type: 3}
 --- !u!65 &1296756499475754707
 BoxCollider:
   m_ObjectHideFlags: 0

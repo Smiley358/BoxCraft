@@ -66,14 +66,13 @@
     <Compile Include="Assets\Scripts\IAdjacetBoxNotifier.cs" />
     <Compile Include="Assets\Resources\Player\PlayerCamera.cs" />
     <Compile Include="Assets\Resources\Eventer\PredictionBox\PredictionBoxScript.cs" />
-    <Compile Include="Assets\SoundEmitter.cs" />
+    <Compile Include="Assets\Resources\Eventer\SoundEmitter.cs" />
     <Compile Include="Assets\Resources\Inventory\ItemShortcutScript.cs" />
     <Compile Include="Assets\Resources\Eventer\BoxSpawnerScript.cs" />
     <Compile Include="Assets\Resources\Inventory\StackScript.cs" />
     <Compile Include="Assets\Resources\Box\Box\BoxBase\BoxBase.cs" />
     <Compile Include="Assets\Scripts\IAttackableObject.cs" />
     <Compile Include="Assets\Resources\Player\GroundCheckScript.cs" />
-    <Compile Include="Assets\Scripts\ISoundEmitterObject.cs" />
     <Compile Include="Assets\Resources\Inventory\SlotScript.cs" />
     <Compile Include="Assets\Scripts\TimeSpanFlag.cs" />
     <Compile Include="Assets\Scripts\JsonConverter.cs" />
@@ -86,6 +85,7 @@
     <Compile Include="Assets\Resources\Player\PlayerScript.cs" />
     <Compile Include="Assets\Resources\Inventory\InventoryScript.cs" />
     <Compile Include="Assets\Resources\Item\ItemContentScript.cs" />
+    <Compile Include="Assets\Resources\Box\Box\BoxVariant_Tile\TileScript.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

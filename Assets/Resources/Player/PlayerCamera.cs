@@ -14,6 +14,11 @@ public class PlayerCamera : MonoBehaviour
         FrustumPlanes = GeometryUtility.CalculateFrustumPlanes(Camera.main);
     }
 
+    private void Start()
+    {
+        //Application.targetFrameRate = 144;
+    }
+
 
     void Update()
     {

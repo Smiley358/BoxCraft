@@ -7,7 +7,7 @@ using UnityEngine;
 /// BOXの基底クラス
 /// このクラスを継承すればBOXとしての最低限の機能を保証する
 /// </summary>
-public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
+public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject, IMeshAccessor
 {
     /// <summary>
     /// Boxを生成して所属チャンクをセットする
@@ -100,7 +100,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     private void Start()
     {
         InitializeBox();
-        Invoke(nameof(DisableIfNeeded), 5);
+        //Invoke(nameof(DisableIfNeeded), 5);
     }
 
     private void OnDestroy()
@@ -126,18 +126,6 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
             //有効化通知
             affiliationBox?.Script?.OnEnableNotification(ChunkScript.Direction.Bottom - i);
         }
-    }
-
-    private void OnDisable()
-    {
-        //隣接する6方向のBoxに対して通知
-        //for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
-        //{
-        //    //隣接するBoxの取得
-        //    ChunkScript.BoxData affiliationBox = affiliationChunk?.GetAdjacentBox(gameObject, (ChunkScript.Direction)i);
-        //    //有効化通知
-        //    affiliationBox?.Script?.OnDisableNotification(ChunkScript.Direction.Bottom - i);
-        //}
     }
 
     /// <summary>
@@ -172,9 +160,25 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     }
 
     /// <summary>
+    /// EditorModeの際に視錐台カリングがきかず重いので回避するためのデバッグ用関数
+    /// </summary>
+    [Conditional("UNITY_EDITOR")]
+    protected void FrustumCulling()
+    {
+        if (GeometryUtility.TestPlanesAABB(PlayerCamera.FrustumPlanes, boxCollider.bounds))
+        {
+            meshRenderer.enabled = true;
+        }
+        else
+        {
+            meshRenderer.enabled = false;
+        }
+    }
+
+    /// <summary>
     /// 必要に応じてGameObjectを無効化する
     /// </summary>
-    private void DisableIfNeeded()
+    public void DisableIfNeeded()
     {
         bool isAllAdjacetBoxActive = true;
         //隣接する6方向のBox全て
@@ -195,22 +199,6 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         if (isAllAdjacetBoxActive)
         {
             gameObject.SetActive(false);
-        }
-    }
-
-    /// <summary>
-    /// EditorModeの際に視錐台カリングがきかず重いので回避するためのデバッグ用関数
-    /// </summary>
-    [Conditional("UNITY_EDITOR")]
-    protected void FrustumCulling()
-    {
-        if (GeometryUtility.TestPlanesAABB(PlayerCamera.FrustumPlanes, boxCollider.bounds))
-        {
-            meshRenderer.enabled = true;
-        }
-        else
-        {
-            meshRenderer.enabled = false;
         }
     }
 
@@ -321,6 +309,18 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         }
     }
 
+    //Implementation from Interface:IItemizeObject,IMeshAccessor
+    public virtual Mesh GetMesh()
+    {
+        return GetComponent<MeshFilter>().mesh;
+    }
+
+    //Implementation from Interface:IItemizeObject,IMeshAccessor
+    public virtual Material GetMaterial()
+    {
+        return GetComponent<MeshRenderer>().material;
+    }
+
     //Implementation from Interface:IItemizeObject
     public virtual InventoryItem GetItemData()
     {
@@ -328,20 +328,20 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     }
 
     //Implementation from Interface:IItemizeObject
-    public virtual Mesh GetMesh()
-    {
-        return GetComponent<MeshFilter>().mesh;
-    }
-
-    //Implementation from Interface:IItemizeObject
-    public virtual Material GetMaterial()
-    {
-        return GetComponent<MeshRenderer>().material;
-    }
-
-    //Implementation from Interface:IItemizeObject
     public virtual Vector3 GetMeshScale()
     {
         return Vector3.one;
+    }
+
+    //Implementation from Interface:IMeshAccessor
+    public MeshFilter GetMeshFilter()
+    {
+        return GetComponent<MeshFilter>();
+    }
+
+    //Implementation from Interface:IMeshAccessor
+    public MeshRenderer GetMeshRenderer()
+    {
+        return GetComponent<MeshRenderer>();
     }
 }

@@ -5,10 +5,8 @@ using UnityEngine;
 /// <summary>
 /// アイテム化可能なオブジェクト
 /// </summary>
-public interface IItemizeObject
+public interface IItemizeObject : IMeshAccessor
 {
-    InventoryItem GetItemData();
-    Mesh GetMesh();
-    Material GetMaterial();
-    Vector3 GetMeshScale();
+    public InventoryItem GetItemData();
+    public Vector3 GetMeshScale();
 }

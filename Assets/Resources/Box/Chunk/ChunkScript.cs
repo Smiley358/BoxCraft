@@ -257,6 +257,9 @@ public class ChunkScript : MonoBehaviour
         box.transform.parent = chunk.transform;
         //チャンクに追加
         chunk.boxDatas[localIndex.x, localIndex.y, localIndex.z] = new BoxData(box, box.GetComponent<BoxBase>());
+        //メッシュ再結合フラグを立てる
+        chunk.isCombineMesh = true;
+
 
         //チャンクですでに変更が行われているか取得
         BoxSaveData change = chunk.changes.Find(data => data.Index == localIndex);
@@ -299,6 +302,8 @@ public class ChunkScript : MonoBehaviour
     private BoxData[,,] boxDatas;
     //Boxの生成データ
     private string[,,] boxGenerateData;
+    //メッシュ結合フラグ
+    private bool isCombineMesh;
     //Boxに対する変更点
     [SerializeField] private List<BoxSaveData> changes;
 
@@ -347,7 +352,26 @@ public class ChunkScript : MonoBehaviour
         StartCoroutine(GenerateChunkIfNeeded());
 
         //１０秒おきにPlayerからの距離を見て離れすぎていたら削除する
-        InvokeRepeating(nameof(KillTimerSetIfNeeded), 0, 10);
+        if(worldIndex.y != 0)
+        {
+            InvokeRepeating(nameof(KillTimerSetIfNeeded), 0, 10);
+        }
+        else
+        {
+            InvokeRepeating(nameof(KillTimerSetIfNeeded), 0, 500);
+        }
+    }
+
+    private void LateUpdate()
+    {
+        //メッシュ結合フラグ入ってたら
+        if (isCombineMesh)
+        {
+            //メッシュの更新（再結合）
+            CombineMesh();
+            //フラグを下げる
+            isCombineMesh = false;
+        }
     }
 
     private void OnDestroy()
@@ -443,7 +467,7 @@ public class ChunkScript : MonoBehaviour
         //バウンディングボックスのX,Y,Z起点位置までのオフセット
         Vector3 offset = size / 2 - center;
 
-        //chunkSize回
+        //チャンク内を全走査
         for (int x = 0; x < chunkSize; x++)
         {
             //chunkSize回
@@ -506,10 +530,31 @@ public class ChunkScript : MonoBehaviour
                     }
                 }
             }
-            yield return null;
+            //yield return null;
+        }
+
+        //チャンク内を全走査
+        for (int x = 0; x < chunkSize; x++)
+        {
+            for (int z = 0; z < chunkSize; z++)
+            {
+                for (int y = 0; y < chunkSize; y++)
+                {
+                    //必要に応じて無効化させる
+                    var script = boxDatas[x, y, z]?.Script;
+                    if(script != null)
+                    {
+                        script.DisableIfNeeded();
+                    }
+                }
+            }
         }
         //地形生成完了フラグを立てる
         IsTerrainGenerateCompleted = true;
+
+        //メッシュを結合
+        CombineMesh();
+        yield return null;
     }
 
     /// <summary>
@@ -575,6 +620,100 @@ public class ChunkScript : MonoBehaviour
                     }
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// メッシュを結合
+    /// </summary>
+    private void CombineMesh()
+    {
+        //Boxからメッシュへのアクセサーを取得
+        IMeshAccessor[] meshAccessors = transform.GetComponentsInChildren<IMeshAccessor>();
+
+        //マテリアル
+        Dictionary<string, Material> materials = new Dictionary<string, Material>();
+        //同マテリアルのMeshFilterリスト
+        Dictionary<string, List<MeshFilter>> meshFilters = new Dictionary<string, List<MeshFilter>>();
+
+        //全IMeshAccessorに対して行う
+        for (int i = 0; i < meshAccessors.Length; i++)
+        {
+            //マテリアル
+            Material material = meshAccessors[i].GetMaterial();
+            //マテリアル名、マテリアルがなかったらマテリアル無グループ"NonMaterial"
+            string materialName = material == null ? "NonMaterial" : material.name;
+
+            //マテリアルが登録されていない場合
+            if (!meshFilters.ContainsKey(materialName))
+            {
+                //マテリアル登録
+                List<MeshFilter> filterList = new List<MeshFilter>();
+                meshFilters.Add(materialName, filterList);
+                materials.Add(materialName, material);
+            }
+
+            //メッシュフィルターをリストに追加
+            meshFilters[materialName].Add(meshAccessors[i].GetMeshFilter());
+            //レンダリングを無効化
+            var renderer = meshAccessors[i].GetMeshRenderer();
+            if(renderer != null)
+            {
+                renderer.enabled = false;
+            }
+        }
+
+        //マテリアルごとにメッシュを結合
+        foreach (var meshFilter in meshFilters)
+        {
+            //結合したメッシュを表示するゲームオブジェクト
+            GameObject combineObject = null;
+            //ゲームオブジェクト名
+            string gameObjectName = "Combined:" + meshFilter.Key;
+            //既にあれば取得
+            combineObject = transform.Find(gameObjectName)?.gameObject;
+
+            //無かったら作る
+            if (combineObject == null)
+            {
+                combineObject = new GameObject();
+                combineObject.name = gameObjectName;
+                combineObject.transform.SetParent(transform);
+                combineObject.transform.SetAsFirstSibling();
+            }
+
+            //MeshFilterを取得、なければアタッチ
+            MeshFilter combinedMeshFilter = combineObject.GetComponent<MeshFilter>();
+            if (combinedMeshFilter == null) 
+            {
+                combinedMeshFilter = combineObject.AddComponent<MeshFilter>(); 
+            }
+            //MeshRendererを取得、なければアタッチ
+            MeshRenderer combinedMeshRenderer = combineObject.GetComponent<MeshRenderer>();
+            if(combinedMeshRenderer == null)
+            {
+                combinedMeshRenderer = combineObject.AddComponent<MeshRenderer>();
+            }
+
+            //結合するメッシュの配列
+            List<MeshFilter> combineMeshFilters = meshFilter.Value;
+            //結合用構造体
+            CombineInstance[] combine = new CombineInstance[combineMeshFilters.Count];
+
+            //結合するメッシュの情報をCombineInstanceに追加
+            for (int i = 0; i < combineMeshFilters.Count; i++)
+            {
+                combine[i].mesh = combineMeshFilters[i].sharedMesh;
+                combine[i].transform = combineMeshFilters[i].transform.localToWorldMatrix;
+            }
+
+            //結合したメッシュを作成したゲームオブジェクトアタッチ
+            combinedMeshFilter.mesh = new Mesh();
+            combinedMeshFilter.mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            combinedMeshFilter.mesh.CombineMeshes(combine);
+
+            //結合したメッシュにマテリアルをアタッチ
+            combinedMeshRenderer.material = materials[meshFilter.Key];
         }
     }
 
@@ -748,7 +887,8 @@ public class ChunkScript : MonoBehaviour
         boxDatas[index.x, index.y, index.z] = null;
         //削除
         Destroy(box);
-
+        //メッシュ再結合フラグを立てる
+        isCombineMesh = true;
 
         //チャンクですでに変更が行われているか取得
         BoxSaveData change = changes.Find(data => data.Index == index);

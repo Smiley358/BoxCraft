@@ -77,6 +77,7 @@
     <Compile Include="Assets\Scripts\TimeSpanFlag.cs" />
     <Compile Include="Assets\Scripts\JsonConverter.cs" />
     <Compile Include="Assets\Resources\Renderer\LinearTextureTileUVMappingScript.cs" />
+    <Compile Include="Assets\Resources\Box\Box\BoxVariant_Tile\TileScript.cs" />
     <Compile Include="Assets\Resources\Inventory\ItemShortcutSlotScript.cs" />
     <Compile Include="Assets\Resources\Manager\PrefabManager.cs" />
     <Compile Include="Assets\Resources\Box\Box\BoxVariant_Spike\SpikeScript.cs" />
@@ -85,7 +86,7 @@
     <Compile Include="Assets\Resources\Player\PlayerScript.cs" />
     <Compile Include="Assets\Resources\Inventory\InventoryScript.cs" />
     <Compile Include="Assets\Resources\Item\ItemContentScript.cs" />
-    <Compile Include="Assets\Resources\Box\Box\BoxVariant_Tile\TileScript.cs" />
+    <Compile Include="Assets\Scripts\IMeshAccessor.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

@@ -374,7 +374,7 @@ public class ChunkScript : MonoBehaviour
             int y = DirectionOffset[direction][Y] + DirectionOffsetCenter[Y];
             int z = DirectionOffset[direction][Z] + DirectionOffsetCenter[Z];
 
-            affiliationChunks?[x, y, z]?.DestroyNotification(Direction.Max - direction);
+            affiliationChunks[x, y, z]?.DestroyNotification(Direction.Max - direction);
         }
     }
 
@@ -396,8 +396,15 @@ public class ChunkScript : MonoBehaviour
             int z = DirectionOffset[direction][Z] + DirectionOffsetCenter[Z];
 
             //チャンクがなかったら
-            if (affiliationChunks?[x, y, z] is null)
+            if (affiliationChunks[x, y, z] == null)
             {
+                //参照が残っているスクリプト
+                if (!(affiliationChunks[x, y, z] is null))
+                {
+                    //参照を消す
+                    affiliationChunks[x, y, z] = null;
+                }
+
                 Vector3 offset = new Vector3(DirectionOffset[direction][X], DirectionOffset[direction][Y], DirectionOffset[direction][Z]);
                 offset *= chunkSize;
                 Index3D index3D = CalcWorldIndex(center + offset);
@@ -408,7 +415,7 @@ public class ChunkScript : MonoBehaviour
                 }
             }
             //移動通知
-            affiliationChunks?[x, y, z]?.PlayerMoveNotification();
+            affiliationChunks[x, y, z]?.PlayerMoveNotification();
         }
     }
 
@@ -517,17 +524,16 @@ public class ChunkScript : MonoBehaviour
             int y = DirectionOffset[direction][Y] + DirectionOffsetCenter[Y];
             int z = DirectionOffset[direction][Z] + DirectionOffsetCenter[Z];
 
-            //参照が残っているスクリプト
-            if ((affiliationChunks[x, y, z] == null) && (!(affiliationChunks[x, y, z] is null)))
-            {
-                //参照を消す
-                affiliationChunks[x, y, z] = null;
-            }
-
-
             //チャンクがなかったら
             if (affiliationChunks[x, y, z] == null)
             {
+                //参照が残っているスクリプト
+                if (!(affiliationChunks[x, y, z] is null))
+                {
+                    //参照を消す
+                    affiliationChunks[x, y, z] = null;
+                }
+
                 //自座標から生成座標へのオフセット
                 Vector3 offset = new Vector3(
                     DirectionOffset[direction][X],

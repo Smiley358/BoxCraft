@@ -47,7 +47,8 @@ public class ChunkScript : MonoBehaviour
     /// Boxがワールドのどこにいるのか
     /// ブロック単位での座標
     /// </summary>
-    [Serializable] public struct Index3D
+    [Serializable]
+    public struct Index3D
     {
         public int x;
         public int y;
@@ -308,12 +309,26 @@ public class ChunkScript : MonoBehaviour
     //生成するオブジェクト
     [SerializeField] private GameObject prefab;
 
-    private void Start()
+    private void Awake()
     {
         //チャンク内のBoxデータ配列
         boxDatas = new BoxData[chunkSize, chunkSize, chunkSize];
+
         //チャンク内に生成したBoxのデータ
         boxGenerateData = new string[chunkSize, chunkSize, chunkSize];
+
+        //隣接チャンク
+        affiliationChunks ??= new ChunkScript[3, 3, 3];
+
+        //チャンクサイズ
+        size = new Vector3(chunkSize, chunkSize, chunkSize);
+
+        //中心座標
+        center = transform.position;
+    }
+
+    private void Start()
+    {
         //チャンクの変更点データをロード
         ChunkSaveData load = Converter.LoadSaveData(worldIndex);
         //セーブデータがあれば保持
@@ -321,14 +336,6 @@ public class ChunkScript : MonoBehaviour
         {
             changes.AddRange(load?.Changes);
         }
-
-        //隣接チャンク
-        affiliationChunks ??= new ChunkScript[3, 3, 3];
-
-        //チャンクサイズ
-        size = new Vector3(chunkSize, chunkSize, chunkSize);
-        //中心座標
-        center = transform.position;
 
         //コライダーのサイズをセット
         GetComponent<BoxCollider>().size = size;
@@ -510,13 +517,21 @@ public class ChunkScript : MonoBehaviour
             int y = DirectionOffset[direction][Y] + DirectionOffsetCenter[Y];
             int z = DirectionOffset[direction][Z] + DirectionOffsetCenter[Z];
 
+            //参照が残っているスクリプト
+            if ((affiliationChunks[x, y, z] == null) && (!(affiliationChunks[x, y, z] is null)))
+            {
+                //参照を消す
+                affiliationChunks[x, y, z] = null;
+            }
+
+
             //チャンクがなかったら
-            if (affiliationChunks?[x, y, z] is null)
+            if (affiliationChunks[x, y, z] == null)
             {
                 //自座標から生成座標へのオフセット
                 Vector3 offset = new Vector3(
-                    DirectionOffset[direction][X], 
-                    DirectionOffset[direction][Y], 
+                    DirectionOffset[direction][X],
+                    DirectionOffset[direction][Y],
                     DirectionOffset[direction][Z]) * chunkSize;
                 //生成する座標
                 Vector3 position = center + offset;

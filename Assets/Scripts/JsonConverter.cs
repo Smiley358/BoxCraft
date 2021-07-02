@@ -97,7 +97,7 @@ namespace JsonConverter
             }
 
             //セーブデータ名
-            public const string SaveFileName = "Save_Chunk.json";
+            public const string SaveFileName = "SaveData/Save_Chunk.json";
 
             /// <summary>
             /// セーブデータを更新

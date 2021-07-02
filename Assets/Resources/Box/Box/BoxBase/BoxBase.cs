@@ -334,13 +334,13 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     }
 
     //Implementation from Interface:IMeshAccessor
-    public MeshFilter GetMeshFilter()
+    public virtual MeshFilter GetMeshFilter()
     {
         return GetComponent<MeshFilter>();
     }
 
     //Implementation from Interface:IMeshAccessor
-    public MeshRenderer GetMeshRenderer()
+    public virtual MeshRenderer GetMeshRenderer()
     {
         return GetComponent<MeshRenderer>();
     }

@@ -120,7 +120,7 @@ public class BoxSpawnerScript : MonoBehaviour
         {
             if (this.box != null)
             {
-                ChunkScript.CreateBoxAndAutomBelongToChunk(box, position, rotation);
+                ChunkScript.CreateBoxAndAutoBelongToChunk(box, position, rotation);
             }
             boxSpawnDelegate = null;
         };

@@ -33,6 +33,8 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
 
     //アイテムデータ
     public InventoryItem ItemData { get; protected set; } = new InventoryItem();
+    //所属チャンク
+    public ChunkScript parentChunk { get; protected set; }
     //回転可能かどうか
     protected bool canRotate;
     //初期化済みかどうか
@@ -43,8 +45,6 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     protected Collider boxCollider;
     //メッシュレンダラー
     protected MeshRenderer meshRenderer;
-    //所属チャンク
-    protected ChunkScript parentChunk;
     //HP
     [field: SerializeField] public int HP { get; protected set; } = 0;
     //最大HP
@@ -109,7 +109,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
         {
             //隣接するBoxの取得
-            ChunkScript.BoxData affiliationBox = parentChunk?.GetAdjacentBox(gameObject, (ChunkScript.Direction)i);
+            ChunkScript.BoxData affiliationBox = parentChunk?.GetAdjacentBox(transform.position, (ChunkScript.Direction)i);
             //有効化通知
             affiliationBox?.Script?.OnDestroyNotification(ChunkScript.Direction.Bottom - i);
         }
@@ -122,7 +122,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
         {
             //隣接するBoxの取得
-            ChunkScript.BoxData affiliationBox = parentChunk?.GetAdjacentBox(gameObject, (ChunkScript.Direction)i);
+            ChunkScript.BoxData affiliationBox = parentChunk?.GetAdjacentBox(transform.position, (ChunkScript.Direction)i);
             //有効化通知
             affiliationBox?.Script?.OnEnableNotification(ChunkScript.Direction.Bottom - i);
         }

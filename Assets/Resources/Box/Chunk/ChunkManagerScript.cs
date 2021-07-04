@@ -28,13 +28,15 @@ public class ChunkManagerScript : MonoBehaviour
         CreateOrder(new Vector3(0, 0, 0));
     }
 
+    //チャンク生成完了フラグ
+    public static bool IsCompleted { get; private set; }
     //全チャンクデータ
     public static Dictionary<ChunkScript.Index3D, ChunkScript> chunks { get; private set; }
     //作成失敗チャンクのオフセットリスト
     private static List<ChunkScript.Index3D> createFailedList;
     //チャンクの生成スタック
     private static Queue<Vector3> chunkCreateOrder;
-    //チャンク生成フラグ
+    //チャンク生成中フラグ
     private static bool isCreate;
 
     /// <summary>
@@ -45,6 +47,7 @@ public class ChunkManagerScript : MonoBehaviour
     {
         //プッシュ
         chunkCreateOrder.Enqueue(position);
+        IsCompleted = false;
 
         //順番に作る
         CreateToOrder();
@@ -88,13 +91,18 @@ public class ChunkManagerScript : MonoBehaviour
         //生成中フラグがおりていたら
         if (isCreate is false)
         {
-            //キューが空だったら何もしない
+            //キューが空じゃないとき
             if (chunkCreateOrder.Count > 0)
             {
                 //次に生成するキューの取得
                 Vector3 position = chunkCreateOrder.Dequeue();
 
                 Instance.StartCoroutine(Create(position));
+            }
+            else
+            {
+                //生成完了
+                IsCompleted = true;
             }
         }
     }

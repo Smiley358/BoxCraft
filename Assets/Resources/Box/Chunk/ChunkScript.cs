@@ -257,7 +257,7 @@ public partial class ChunkScript : MonoBehaviour
             if (ChunkManagerScript.IsCompleted) break;
             yield return null;
         }
-        Debug.Log("Create : " + worldIndex.ToString());
+        Debug.Log("Generate Terrain : " + worldIndex.ToString());
 
         //削除されたBox周辺のBoxの生成
         var destroys = changes.FindAll(data => data.Name == "");
@@ -304,11 +304,23 @@ public partial class ChunkScript : MonoBehaviour
     /// </summary>
     private IEnumerator GenerateChunkIfNeeded()
     {
+        //生成予約に出したIndexリスト
+        List<Index3D> createList = new List<Index3D>();
+
+        Func<int, int, int> calcDirectionOffsetDelegate = (axis, direction) => DirectionOffset[direction][axis] + DirectionOffsetCenter[axis];
+        Func<int, Vector3> calcCreatePositionDelegate = (direction) =>
+        {
+            return new Vector3(
+                    DirectionOffset[direction][X],
+                    DirectionOffset[direction][Y],
+                    DirectionOffset[direction][Z]) * chunkSize + center;
+        };
+
         for (int direction = (int)Direction.First; direction <= (int)Direction.Max; direction++)
         {
-            int x = DirectionOffset[direction][X] + DirectionOffsetCenter[X];
-            int y = DirectionOffset[direction][Y] + DirectionOffsetCenter[Y];
-            int z = DirectionOffset[direction][Z] + DirectionOffsetCenter[Z];
+            int x = calcDirectionOffsetDelegate(X, direction);
+            int y = calcDirectionOffsetDelegate(Y, direction);
+            int z = calcDirectionOffsetDelegate(Z, direction);
 
             //チャンクがなかったら
             if (adjacentChunks[x, y, z] == null)
@@ -320,13 +332,8 @@ public partial class ChunkScript : MonoBehaviour
                     adjacentChunks[x, y, z] = null;
                 }
 
-                //自座標から生成座標へのオフセット
-                Vector3 offset = new Vector3(
-                    DirectionOffset[direction][X],
-                    DirectionOffset[direction][Y],
-                    DirectionOffset[direction][Z]) * chunkSize;
                 //生成する座標
-                Vector3 position = center + offset;
+                Vector3 position = calcCreatePositionDelegate(direction);
                 //生成するインデックス
                 Index3D index3D = CalcWorldIndex(position);
                 //全チャンクデータから探す
@@ -342,31 +349,26 @@ public partial class ChunkScript : MonoBehaviour
                     {
                         //生成キューへ追加
                         ChunkManagerScript.CreateOrder(position);
-                        //生成が完了するまで待つ
-                        //while (true)
-                        {
-                            //生成されていたとき
-                            //if (ChunkManagerScript.chunks.ContainsKey(index3D))
-                            //{
-                            //    adjacentChunks[x, y, z] = ChunkManagerScript.chunks[index3D];
-                            //    //break;
-                            //}
-                            //生成失敗していたとき
-                            //else if (ChunkManagerScript.IsCreateFailed(index3D))
-                            //{
-                            //    break;
-                            //}
-                            // yield return null;
-                        }
+                        //生成キューへ追加したので保存
+                        createList.Add(index3D);
                     }
                 }
             }
         }
+
+        //全チャンクの生成待ち
+        while (true)
+        {
+            if (ChunkManagerScript.IsCompleted) break;
+            yield return null;
+        }
+        Debug.Log("Create Chunk : " + worldIndex.ToString());
+
         for (int direction = (int)Direction.First; direction <= (int)Direction.Max; direction++)
         {
-            int x = DirectionOffset[direction][X] + DirectionOffsetCenter[X];
-            int y = DirectionOffset[direction][Y] + DirectionOffsetCenter[Y];
-            int z = DirectionOffset[direction][Z] + DirectionOffsetCenter[Z];
+            int x = calcDirectionOffsetDelegate(X, direction);
+            int y = calcDirectionOffsetDelegate(Y, direction);
+            int z = calcDirectionOffsetDelegate(Z, direction);
 
             //チャンクがなかったら
             if (adjacentChunks[x, y, z] == null)
@@ -378,35 +380,32 @@ public partial class ChunkScript : MonoBehaviour
                     adjacentChunks[x, y, z] = null;
                 }
 
-                //自座標から生成座標へのオフセット
-                Vector3 offset = new Vector3(
-                    DirectionOffset[direction][X],
-                    DirectionOffset[direction][Y],
-                    DirectionOffset[direction][Z]) * chunkSize;
                 //生成する座標
-                Vector3 position = center + offset;
+                Vector3 position = calcCreatePositionDelegate(direction);
                 //生成するインデックス
                 Index3D index3D = CalcWorldIndex(position);
-                //全チャンクデータから探す
-                while (true)
+                //生成予約していたら
+                if (createList.Contains(index3D))
                 {
-                    //生成されていたとき
-                    if (ChunkManagerScript.chunks.ContainsKey(index3D))
+                    //全チャンクデータから探す
+                    while (true)
                     {
-                        adjacentChunks[x, y, z] = ChunkManagerScript.chunks[index3D];
-                        break;
+                        //生成されていたとき
+                        if (ChunkManagerScript.chunks.ContainsKey(index3D))
+                        {
+                            adjacentChunks[x, y, z] = ChunkManagerScript.chunks[index3D];
+                            break;
+                        }
+                        //生成失敗していたとき
+                        else if (ChunkManagerScript.IsCreateFailed(index3D))
+                        {
+                            break;
+                        }
+                        yield return null;
                     }
-                    //生成失敗していたとき
-                    else if (ChunkManagerScript.IsCreateFailed(index3D))
-                    {
-                        break;
-                    }
-                    yield return null;
                 }
-
             }
         }
-        yield return null;
     }
 
     /// <summary>

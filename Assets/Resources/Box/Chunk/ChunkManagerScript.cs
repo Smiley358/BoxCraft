@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -28,6 +29,12 @@ public class ChunkManagerScript : MonoBehaviour
         CreateOrder(new Vector3(0, 0, 0));
     }
 
+    private void Update()
+    {
+        //nextTaskDelegate?.Invoke();
+        CreateToOrder();
+    }
+
     //チャンク生成完了フラグ
     public static bool IsCompleted { get; private set; }
     //全チャンクデータ
@@ -48,9 +55,6 @@ public class ChunkManagerScript : MonoBehaviour
         //プッシュ
         chunkCreateOrder.Enqueue(position);
         IsCompleted = false;
-
-        //順番に作る
-        CreateToOrder();
     }
 
     /// <summary>
@@ -97,6 +101,7 @@ public class ChunkManagerScript : MonoBehaviour
                 //次に生成するキューの取得
                 Vector3 position = chunkCreateOrder.Dequeue();
 
+                //生成開始
                 Instance.StartCoroutine(Create(position));
             }
             else
@@ -114,30 +119,32 @@ public class ChunkManagerScript : MonoBehaviour
     /// <param name="position">生成座標</param>
     private static IEnumerator Create(Vector3 position)
     {
+        //生成中フラグ立てる
         isCreate = true;
-
 
         //チャンク生成
         GameObject chunk = ChunkScript.Create(position);
 
+        //作られてなかったら生成失敗リストに入れる
         if (chunk == null)
         {
             //生成フラグを下す
             isCreate = false;
             //失敗したリストに入れる
             createFailedList.Add(ChunkScript.CalcWorldIndex(position));
-            //次のキューを行う
-            CreateToOrder();
-
+            //中断
             yield break;
         }
 
+        //スクリプト取得
         ChunkScript script = chunk.GetComponent<ChunkScript>();
 
+        //地形生成待ち
         while (true)
         {
             if (script.IsTerrainGenerateCompleted)
             {
+                //チャンクリストに追加
                 chunks.Add(script.worldIndex, script);
                 break;
             }
@@ -146,8 +153,5 @@ public class ChunkManagerScript : MonoBehaviour
 
         //生成フラグを下す
         isCreate = false;
-
-        //次のキューを行う
-        CreateToOrder();
     }
 }

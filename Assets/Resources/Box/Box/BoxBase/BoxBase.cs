@@ -45,6 +45,8 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     protected Collider boxCollider;
     //メッシュレンダラー
     protected MeshRenderer meshRenderer;
+    //メッシュフィルター
+    protected MeshFilter meshFilter;
     //HP
     [field: SerializeField] public int HP { get; protected set; } = 0;
     //最大HP
@@ -80,7 +82,10 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         {
             BoxSpawnerScript.ScriptInstance.NextBox = null;
         };
+    }
 
+    protected void InitializeField()
+    {
         //無敵時間の設定
         isGod = new TimeSpanFlag(300);
 
@@ -93,14 +98,21 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         //メッシュレンダラーを保持
         meshRenderer = GetComponent<MeshRenderer>();
 
+        //メッシュフィルターを保持
+        meshFilter = GetComponent<MeshFilter>();
+
         //初期化終了フラグを立てる
         isInitialized = true;
+    }
+
+    private void Awake()
+    {
+        InitializeField();
     }
 
     private void Start()
     {
         InitializeBox();
-        //Invoke(nameof(DisableIfNeeded), 5);
     }
 
     private void OnDestroy()
@@ -157,6 +169,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         {
             gameObject.SetActive(true);
         }
+        MeshUpdate(null);
     }
 
     /// <summary>
@@ -180,6 +193,9 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     /// </summary>
     public void DisableIfNeeded()
     {
+        //他のBoxを面していない面の方向
+        List<ChunkScript.Direction> notAdjoining = new List<ChunkScript.Direction>();
+        //接していない面があったかどうか
         bool isAllAdjacetBoxActive = true;
         //隣接する6方向のBox全て
         for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
@@ -191,7 +207,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
             {
                 //無効化はしない
                 isAllAdjacetBoxActive = false;
-                break;
+                notAdjoining.Add((ChunkScript.Direction)i);
             }
         }
 
@@ -200,6 +216,45 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         {
             gameObject.SetActive(false);
         }
+        //接していない面のみメッシュを張る
+        else
+        {
+            MeshUpdate(notAdjoining);
+        }
+    }
+
+    private void MeshUpdate(List<ChunkScript.Direction> notAdjoining)
+    {
+        if(notAdjoining == null)
+        {
+            //他のBoxを面していない面の方向
+            notAdjoining = new List<ChunkScript.Direction>();
+            //隣接する6方向のBox全て
+            for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
+            {
+                //隣接するBoxの取得
+                bool isExistAffiliationBox = parentChunk?.IsAdjacetBoxExist(gameObject, (ChunkScript.Direction)i) ?? false;
+                //何もなければBoxが存在していないということ
+                if (isExistAffiliationBox == false)
+                {
+                    notAdjoining.Add((ChunkScript.Direction)i);
+                }
+            }
+        }
+
+        //メッシュ結合用
+        CombineInstance[] combine = new CombineInstance[notAdjoining.Count];
+        for (int i = 0; i < notAdjoining.Count; i++)
+        {
+            //メッシュ結合データ入れる
+            var direction = notAdjoining[i];
+            combine[i].mesh = PrefabManager.Instance.GetMesh(direction.ToString()).sharedMesh;
+            combine[i].transform = PrefabManager.Instance.GetMesh(direction.ToString()).transform.localToWorldMatrix;
+        }
+        //メッシュの生成
+        meshFilter.mesh = new Mesh();
+        meshFilter.mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        meshFilter.mesh.CombineMeshes(combine);
     }
 
     /// <summary>
@@ -300,7 +355,8 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
             //破壊時の音を出す
             PlaySEBreak();
         }
-
+        //メッシュをBoxへ戻す
+        meshFilter.mesh = PrefabManager.Instance.GetMesh("Box").sharedMesh;
         //以下破壊処理
         bool isCreate = ItemScript.Create(gameObject);
         if (isCreate)
@@ -312,7 +368,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     //Implementation from Interface:IItemizeObject,IMeshAccessor
     public virtual Mesh GetMesh()
     {
-        return GetComponent<MeshFilter>().mesh;
+        return meshFilter.mesh;
     }
 
     //Implementation from Interface:IItemizeObject,IMeshAccessor
@@ -336,7 +392,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     //Implementation from Interface:IMeshAccessor
     public virtual MeshFilter GetMeshFilter()
     {
-        return GetComponent<MeshFilter>();
+        return meshFilter;
     }
 
     //Implementation from Interface:IMeshAccessor

@@ -77,7 +77,7 @@ public partial class ChunkScript : MonoBehaviour
         }
         else
         {
-            InvokeRepeating(nameof(KillTimerSetIfNeeded), 0, 500);
+            InvokeRepeating(nameof(KillTimerSetIfNeeded), 0, 10);
         }
     }
 
@@ -245,7 +245,7 @@ public partial class ChunkScript : MonoBehaviour
                     }
                 }
             }
-            yield return null;
+            //yield return null;
         }
 
         //地形生成完了フラグを立てる
@@ -295,7 +295,6 @@ public partial class ChunkScript : MonoBehaviour
 
         //メッシュを結合
         CombineMesh();
-        yield return null;
     }
 
     /// <summary>

@@ -9,7 +9,7 @@ public partial class ChunkScript
     //Boxのサイズ
     private const float boxSize = 1;
     //自動生成距離
-    private const int far = 1;
+    private const int far = 0;
     //ノイズ解像度（平行）
     private const float mapResolutionHorizontal = 50.0f;
     //ノイズ解像度（垂直）

@@ -564,7 +564,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: SplitPlaneBox
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    - target: {fileID: 6133911766554415025, guid: 6d196ec75a0bd6d45b96f9901b3b333a, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 4453990270400040760, guid: 6d196ec75a0bd6d45b96f9901b3b333a, type: 3}
+    - {fileID: 7005692691993711091, guid: 6d196ec75a0bd6d45b96f9901b3b333a, type: 3}
+    - {fileID: 6423246819095952378, guid: 6d196ec75a0bd6d45b96f9901b3b333a, type: 3}
+    - {fileID: 7754389171684890618, guid: 6d196ec75a0bd6d45b96f9901b3b333a, type: 3}
+    - {fileID: 28261419239421245, guid: 6d196ec75a0bd6d45b96f9901b3b333a, type: 3}
+    - {fileID: 6031562289065291487, guid: 6d196ec75a0bd6d45b96f9901b3b333a, type: 3}
+    - {fileID: 3815066047252285865, guid: 6d196ec75a0bd6d45b96f9901b3b333a, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 6d196ec75a0bd6d45b96f9901b3b333a, type: 3}
 --- !u!4 &476469852 stripped
 Transform:
@@ -875,6 +886,7 @@ MonoBehaviour:
   - {fileID: 476469855}
   - {fileID: 476469854}
   - {fileID: 476469853}
+  - {fileID: 1174552678}
   prefabs:
   - {fileID: 613170645195514584, guid: bf73d85742c679249afdb78d1dac6d56, type: 3}
   - {fileID: 1117176970449583919, guid: e18bcb52f72c179429965d62b84321b8, type: 3}
@@ -1212,6 +1224,11 @@ GameObject:
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7979810091122806015, guid: e17db7e6f12c85342adfb2f2a55a554e, type: 3}
   m_PrefabInstance: {fileID: 460019106}
+  m_PrefabAsset: {fileID: 0}
+--- !u!33 &1174552678 stripped
+MeshFilter:
+  m_CorrespondingSourceObject: {fileID: 2561151844024509580, guid: 6d196ec75a0bd6d45b96f9901b3b333a, type: 3}
+  m_PrefabInstance: {fileID: 476469851}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1352086178
 GameObject:

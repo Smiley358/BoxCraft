@@ -81,13 +81,13 @@
     <Compile Include="Assets\Resources\Box\Box\BoxVariant_Tile\TileScript.cs" />
     <Compile Include="Assets\Resources\Inventory\ItemShortcutSlotScript.cs" />
     <Compile Include="Assets\Resources\Manager\PrefabManager.cs" />
+    <Compile Include="Assets\Resources\Box\Chunk\ChunkScript_Static.cs" />
     <Compile Include="Assets\Resources\Box\Box\BoxVariant_Spike\SpikeScript.cs" />
     <Compile Include="Assets\Scripts\IItemizeObject.cs" />
     <Compile Include="Assets\Resources\Box\Chunk\ChunkManagerScript.cs" />
     <Compile Include="Assets\Resources\Player\PlayerScript.cs" />
     <Compile Include="Assets\Resources\Inventory\InventoryScript.cs" />
     <Compile Include="Assets\Resources\Item\ItemContentScript.cs" />
-    <Compile Include="Assets\Resources\Box\Chunk\ChunkScript_Static.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

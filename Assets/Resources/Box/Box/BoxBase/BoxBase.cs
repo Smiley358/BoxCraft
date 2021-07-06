@@ -75,7 +75,12 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
 
         ItemData.UseDelegate = (SlotScript slot) =>
         {
-            return BoxSpawnerScript.ScriptInstance.ReservationSpawnBox(PrefabManager.Instance.GetPrefab(slot.Item.ItemName));
+            bool isUsed = BoxSpawnerScript.ScriptInstance.ReservationSpawnBox(PrefabManager.Instance.GetPrefab(slot.Item.ItemName));
+            if (isUsed)
+            {
+                SoundEmitter.FindClip("set_box").Play();
+            }
+            return isUsed;
         };
 
         ItemData.UsedupDelegate = (SlotScript slot) =>
@@ -150,15 +155,6 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     }
 
     /// <summary>
-    /// 引数direction方向のBoxが無効化されたときに呼ばれる
-    /// </summary>
-    /// <param name="direction">自分から見た通知者の方向</param>
-    private void OnDisableNotification(ChunkScript.Direction direction)
-    {
-
-    }
-
-    /// <summary>
     /// 引数direction方向のBoxが破壊されたときに呼ばれる
     /// </summary>
     /// <param name="direction">自分から見た通知者の方向</param>
@@ -223,6 +219,10 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         }
     }
 
+    /// <summary>
+    /// メッシュ形状を更新する
+    /// </summary>
+    /// <param name="notAdjoining">他のBoxに接していない面</param>
     private void MeshUpdate(List<ChunkScript.Direction> notAdjoining)
     {
         if(notAdjoining == null)

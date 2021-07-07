@@ -88,6 +88,7 @@
     <Compile Include="Assets\Resources\Player\PlayerScript.cs" />
     <Compile Include="Assets\Resources\Inventory\InventoryScript.cs" />
     <Compile Include="Assets\Resources\Item\ItemContentScript.cs" />
+    <Compile Include="Assets\Resources\Box\Chunk\ChunkScript_Utils.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

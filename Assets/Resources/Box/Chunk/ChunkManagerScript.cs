@@ -31,8 +31,10 @@ public class ChunkManagerScript : MonoBehaviour
 
     private void Update()
     {
-        //nextTaskDelegate?.Invoke();
-        CreateToOrder();
+        if (!IsCompleted)
+        {
+            CreateToOrder();
+        }
     }
 
     //チャンク生成完了フラグ

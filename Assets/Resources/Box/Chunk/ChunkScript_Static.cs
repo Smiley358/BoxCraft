@@ -9,7 +9,7 @@ public partial class ChunkScript
     //Boxのサイズ
     private const float boxSize = 1;
     //自動生成距離
-    private const int far = 0;
+    private const int far = 3;
     //ノイズ解像度（平行）
     private const float mapResolutionHorizontal = 50.0f;
     //ノイズ解像度（垂直）
@@ -233,30 +233,6 @@ public partial class ChunkScript
     }
 
     /// <summary>
-    /// Boxの座標をチャンク内でのローカルインデックスに変換
-    /// </summary>
-    /// <param name="position">変換する座標</param>
-    /// <param name="chunkCenter">チャンクの中心座標</param>
-    /// <returns>チャンク内でのローカルインデックス</returns>
-    public static Index3D CalcLocalIndexForBox(Vector3 chunkCenter,Vector3 position)
-    {
-        //ローカル座標の計算
-        Vector3 localPosition = new Vector3(
-            position.x + (chunkSize / 2),
-            position.y + (chunkSize / 2),
-            position.z + (chunkSize / 2)) - chunkCenter;
-
-        //baseBoxが格納されている３次元配列のインデックスを計算
-        int x = (int)Mathf.Floor(localPosition.x);
-        int y = (int)Mathf.Floor(localPosition.y);
-        int z = (int)Mathf.Floor(localPosition.z);
-
-        return new Index3D(x, y, z);
-    }
-
-
-
-    /// <summary>
     /// Boxを生成して自動でチャンクに所属させる
     /// </summary>
     /// <param name="prefab">prefab</param>
@@ -271,15 +247,6 @@ public partial class ChunkScript
         if (!ChunkManagerScript.chunks.ContainsKey(index)) return null;
         //チャンクを取得
         ChunkScript chunk = ChunkManagerScript.chunks[index];
-        //ローカル座標を計算
-        Vector3 localPosition = (position - chunk.transform.position);
-        //ローカルインデックスを計算
-        Index3D localIndex = new Index3D
-            (
-                (int)(Mathf.Floor(localPosition.x + (chunkSize / 2 - boxSize / 2))),
-                (int)(Mathf.Floor(localPosition.y + (chunkSize / 2 - boxSize / 2))),
-                (int)(Mathf.Floor(localPosition.z + (chunkSize / 2 - boxSize / 2)))
-            );
 
         //生成可能なら生成
         GameObject box = chunk.CreateBoxAndBelongToChunk(prefab, position, rotation);

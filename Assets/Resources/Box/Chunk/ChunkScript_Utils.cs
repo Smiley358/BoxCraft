@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using JsonConverter.ChunkJsonConverter;
 using UnityEngine;
 
 public partial class ChunkScript
@@ -22,57 +23,6 @@ public partial class ChunkScript
             return true;
         }
         return false;
-    }
-
-    /// <summary>
-    /// Boxが存在するか確認する
-    /// 作成されていない場合は自動生成データを確認し
-    /// 自動生成されるはずの箇所であればTrueを返す
-    /// </summary>
-    /// <param name="index">確認したいインデックス</param>
-    /// <returns>存在もしくは自動生成される場合はTrue</returns>
-    private bool IsBoxExist(Index3D index)
-    {
-        //当該インデックスのボックスデータを取得
-        BoxData boxData = boxDatas?[index.x, index.y, index.z];
-        //
-        bool isExist = boxData != null;
-        //存在しなかったら生成されていないだけの可能性がある
-        if (!isExist)
-        {
-            //変更点取得
-            var change = changes.Find(data => data.Index == index);
-            //prefab名
-            string prefabName = null;
-
-            //変更なし
-            if (change == null)
-            {
-                //地形生成データから取得
-                prefabName = boxGenerateData?[index.x, index.y, index.z];
-            }
-            //変更有
-            else
-            {
-                //変更データから取得
-                prefabName = change.Name;
-            }
-
-            //削除による変更
-            if (string.IsNullOrEmpty(prefabName))
-            {
-                //存在しない
-                //isExist = false;
-            }
-            //追加による変更
-            else
-            {
-                //存在する
-                isExist = true;
-            }
-        }
-
-        return isExist;
     }
 
     /// <summary>

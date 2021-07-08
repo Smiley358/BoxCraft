@@ -27,6 +27,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         {
             return null;
         }
+        madeBox.name = box.name;
         madeBox.GetComponent<BoxBase>().parentChunk = chunk;
         return madeBox;
     }
@@ -118,6 +119,15 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     private void Start()
     {
         InitializeBox();
+
+        //隣接する6方向のBoxに対して通知
+        for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
+        {
+            //隣接するBoxの取得
+            ChunkScript.BoxData affiliationBox = parentChunk?.GetAdjacentBox(transform.position, (ChunkScript.Direction)i, false, true);
+            //有効化通知
+            affiliationBox?.Script?.OnEnableNotification(ChunkScript.Direction.Bottom - i);
+        }
     }
 
     private void OnDestroy()
@@ -126,7 +136,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
         {
             //隣接するBoxの取得
-            ChunkScript.BoxData affiliationBox = parentChunk?.GetAdjacentBox(transform.position, (ChunkScript.Direction)i);
+            ChunkScript.BoxData affiliationBox = parentChunk?.GetAdjacentBox(transform.position, (ChunkScript.Direction)i, false, true);
             //有効化通知
             affiliationBox?.Script?.OnDestroyNotification(ChunkScript.Direction.Bottom - i);
         }
@@ -134,15 +144,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
 
     private void OnEnable()
     {
-        if (!isInitialized) return;
-        //隣接する6方向のBoxに対して通知
-        for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
-        {
-            //隣接するBoxの取得
-            ChunkScript.BoxData affiliationBox = parentChunk?.GetAdjacentBox(transform.position, (ChunkScript.Direction)i);
-            //有効化通知
-            affiliationBox?.Script?.OnEnableNotification(ChunkScript.Direction.Bottom - i);
-        }
+
     }
 
     /// <summary>
@@ -189,7 +191,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     /// </summary>
     public void DisableIfNeeded()
     {
-        //他のBoxを面していない面の方向
+        //他のBoxと接していない面の方向
         List<ChunkScript.Direction> notAdjoining = new List<ChunkScript.Direction>();
         //接していない面があったかどうか
         bool isAllAdjacetBoxActive = true;
@@ -197,9 +199,9 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
         {
             //隣接するBoxの取得
-            bool isExistAffiliationBox = parentChunk?.IsAdjacetBoxExist(gameObject, (ChunkScript.Direction)i) ?? false;
+            bool isAdjacetBoxExist = parentChunk?.IsAdjacetBoxExist(gameObject, (ChunkScript.Direction)i) ?? false;
             //何もなければBoxが存在していないということ
-            if (isExistAffiliationBox == false)
+            if (isAdjacetBoxExist == false)
             {
                 //無効化はしない
                 isAllAdjacetBoxActive = false;
@@ -216,6 +218,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         else
         {
             MeshUpdate(notAdjoining);
+            parentChunk.isCombineMesh = true;
         }
     }
 
@@ -233,9 +236,9 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
             for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
             {
                 //隣接するBoxの取得
-                bool isExistAffiliationBox = parentChunk?.IsAdjacetBoxExist(gameObject, (ChunkScript.Direction)i) ?? false;
+                bool isAdjacetBoxExist = parentChunk?.IsAdjacetBoxExist(gameObject, (ChunkScript.Direction)i) ?? false;
                 //何もなければBoxが存在していないということ
-                if (isExistAffiliationBox == false)
+                if (isAdjacetBoxExist == false)
                 {
                     notAdjoining.Add((ChunkScript.Direction)i);
                 }
@@ -248,8 +251,9 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         {
             //メッシュ結合データ入れる
             var direction = notAdjoining[i];
-            combine[i].mesh = PrefabManager.Instance.GetMesh(direction.ToString()).sharedMesh;
-            combine[i].transform = PrefabManager.Instance.GetMesh(direction.ToString()).transform.localToWorldMatrix;
+            var directionString = direction.ToString();
+            combine[i].mesh = PrefabManager.Instance.GetMesh(directionString).sharedMesh;
+            combine[i].transform = PrefabManager.Instance.GetMesh(directionString).transform.localToWorldMatrix;
         }
         //メッシュの生成
         meshFilter.mesh = new Mesh();

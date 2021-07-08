@@ -9,7 +9,7 @@ public partial class ChunkScript
     //Boxのサイズ
     private const float boxSize = 1;
     //自動生成距離
-    private const int far = 3;
+    private const int far = 1;
     //ノイズ解像度（平行）
     private const float mapResolutionHorizontal = 50.0f;
     //ノイズ解像度（垂直）
@@ -205,12 +205,16 @@ public partial class ChunkScript
             return null;
         }
 
+        //prefab
+        var prefab = PrefabManager.Instance.GetPrefab("Chunk");
         //チャンク生成
-        GameObject chunk = Instantiate(PrefabManager.Instance.GetPrefab("Chunk"), position, Quaternion.identity);
+        GameObject chunk = Instantiate(prefab, position, Quaternion.identity);
         //スクリプトの取得
         ChunkScript script = chunk.GetComponent<ChunkScript>();
         //インデックスを設定
         script.worldIndex = chunkIndex;
+        //名前を変更
+        chunk.name = prefab.name + script.worldIndex.ToString();
 
         //チャンクを返す
         return chunk;
@@ -230,6 +234,23 @@ public partial class ChunkScript
                 (int)(Mathf.Round(position.z / chunkSize))
             );
         return index;
+    }
+
+    /// <summary>
+    /// Boxのインデックスからチャンクへのオフセットを計算
+    /// チャンク内の場合（0,0,0）
+    /// X+方向にはみ出している場合（1,0,0）
+    /// 2個以上またいでいる場合は不具合のもとなので使用禁止
+    /// </summary>
+    /// <param name="index">Boxのインデックス</param>
+    /// <returns>チャンクへのオフセット</returns>
+    public static Index3D CalcChunkOffsetFromBoxIndex(Index3D index)
+    {
+        return new Index3D(
+            Math.Sign((index.x >= 0 && chunkSize > index.x ? 0 : index.x) / (float)chunkSize),
+            Math.Sign((index.y >= 0 && chunkSize > index.y ? 0 : index.y) / (float)chunkSize),
+            Math.Sign((index.z >= 0 && chunkSize > index.z ? 0 : index.z) / (float)chunkSize)
+            );
     }
 
     /// <summary>

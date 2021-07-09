@@ -17,7 +17,8 @@ public partial class ChunkScript
         Index3D distance = PlayerIndex - index;
         //全てfarより近ければいい
         if ((Math.Abs(distance.x) <= far) &&
-            (Math.Abs(distance.y) <= far/3) &&
+            //((distance.y <= (0 - far / 2)) && (Math.Abs(distance.y) <= far + far / 2)) &&
+            (Math.Abs(distance.y) <= far) &&
             (Math.Abs(distance.z) <= far))
         {
             return true;
@@ -73,5 +74,31 @@ public partial class ChunkScript
             (int)Mathf.Floor(localPosition.x),
             (int)Mathf.Floor(localPosition.y),
             (int)Mathf.Floor(localPosition.z));
+    }
+
+    /// <summary>
+    /// パーリンノイズを使用してYの高さを計算する
+    /// </summary>
+    /// <param name="x">Yの高さを求めたいX座標</param>
+    /// <param name="z">Yの高さを求めたいZ座標</param>
+    /// <returns>Y座標</returns>
+    public int CalcNoiseHeight(float x,float z)
+    {
+        UnityEngine.Random.InitState(seed);
+        int addCount = 2;
+        //ノイズ生成
+        float noise = 0;
+        for (int i = 0; i < addCount; i++)
+        {
+            float random = UnityEngine.Random.value;
+            float randomScale = UnityEngine.Random.RandomRange(0.5f, 1.5f);
+            noise += Mathf.PerlinNoise(random + x * mapScaleHorizontal * randomScale, random + z * mapScaleHorizontal / randomScale);
+        }
+        noise /= addCount;
+        //地形の一番上の位置
+        int top = (int)Mathf.Round(mapResolutionVertical * noise);
+        top -= chunkSize / 2;
+
+        return top;
     }
 }

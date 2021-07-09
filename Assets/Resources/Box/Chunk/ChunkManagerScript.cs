@@ -69,7 +69,7 @@ public class ChunkManagerScript : MonoBehaviour
         if (chunk == null) return;
 
         //チャンクデータを一覧から消す
-        chunks.Remove(chunk.GetComponent<ChunkScript>().worldIndex);
+        chunks.Remove(chunk.GetComponent<ChunkScript>().WorldIndex);
         //チャンクを削除
         Destroy(chunk);
     }
@@ -147,7 +147,7 @@ public class ChunkManagerScript : MonoBehaviour
             if (script.IsTerrainGenerateCompleted)
             {
                 //チャンクリストに追加
-                chunks.Add(script.worldIndex, script);
+                chunks.Add(script.WorldIndex, script);
                 break;
             }
             yield return null;

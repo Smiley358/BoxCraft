@@ -13,9 +13,11 @@ public partial class ChunkScript : MonoBehaviour
     //キルタイマーが入っているかどうか
     public bool IsKillTimerSet { get; private set; }
     //チャンクの配列インデックス
-    public Index3D worldIndex { get; private set; }
+    public Index3D WorldIndex { get; private set; }
     //メッシュ結合フラグ
-    public bool isCombineMesh { get; set; }
+    public bool IsCombineMesh { get; set; }
+    //Boxが所属しているか
+    public bool IsBoxBelong { get; private set; }
 
     //隣接チャンク
     private ChunkScript[,,] adjacentChunks;
@@ -23,13 +25,13 @@ public partial class ChunkScript : MonoBehaviour
     private BoxData[,,] boxDatas;
     //Boxの生成データ
     private string[,,] boxGenerateData;
-
     //Boxに対する変更点
-    [SerializeField] private List<BoxSaveData> changes;
+    private List<BoxSaveData> changes;
     //チャンクのX,Y,Zサイズ
-    [SerializeField] private Vector3 size;
+    private Vector3 size;
     //チャンクの中心座標
-    [SerializeField] private Vector3 center;
+    private Vector3 center;
+
     //生成するオブジェクト
     [SerializeField] private GameObject prefab;
 
@@ -54,11 +56,12 @@ public partial class ChunkScript : MonoBehaviour
     private void Start()
     {
         //チャンクの変更点データをロード
-        ChunkSaveData load = Converter.LoadSaveData(worldIndex);
+        ChunkSaveData load = Converter.LoadSaveData(WorldIndex);
+        changes ??= new List<BoxSaveData>();
         //セーブデータがあれば保持
         if ((load != null) && load.Changes != null)
         {
-            changes.AddRange(load?.Changes);
+            changes.AddRange(load.Changes);
         }
 
         //コライダーのサイズをセット
@@ -71,25 +74,18 @@ public partial class ChunkScript : MonoBehaviour
         StartCoroutine(GenerateChunkIfNeeded());
 
         //１０秒おきにPlayerからの距離を見て離れすぎていたら削除する
-        if (worldIndex.y != 0)
-        {
-            InvokeRepeating(nameof(KillTimerSetIfNeeded), 0, 10);
-        }
-        else
-        {
-            InvokeRepeating(nameof(KillTimerSetIfNeeded), 0, 10);
-        }
+        InvokeRepeating(nameof(KillTimerSetIfNeeded), 0, 10);
     }
 
     private void LateUpdate()
     {
         //メッシュ結合フラグ入ってたら
-        if (isCombineMesh||Input.GetKeyDown(KeyCode.L))
+        if (IsCombineMesh)
         {
             //メッシュの更新（再結合）
             CombineMesh();
             //フラグを下げる
-            isCombineMesh = false;
+            IsCombineMesh = false;
         }
     }
 
@@ -108,7 +104,7 @@ public partial class ChunkScript : MonoBehaviour
         }
 
         //チャンクデータの保存
-        Converter.UpdateSavedata(worldIndex, changes);
+        Converter.UpdateSavedata(WorldIndex, changes);
 
         //隣接チャンクに破壊通知
         for (int direction = (int)Direction.First; direction <= (int)Direction.Max; direction++)
@@ -128,7 +124,7 @@ public partial class ChunkScript : MonoBehaviour
         //自分自身にPlayerの移動通知
         PlayerMoveNotification();
         //Playerのインデックスを自分に
-        PlayerIndex = worldIndex;
+        PlayerIndex = WorldIndex;
 
         //全方位分ループ
         for (int direction = (int)Direction.First; direction <= (int)Direction.Max; direction++)
@@ -165,7 +161,7 @@ public partial class ChunkScript : MonoBehaviour
     private void OnDrawGizmos()
     {
         //境目が分からないのでデバッグ表示
-        if (worldIndex.y == 0)
+        if (WorldIndex.y == 0)
         {
             Gizmos.color = Color.green;
         }
@@ -181,14 +177,6 @@ public partial class ChunkScript : MonoBehaviour
     /// </summary>
     private IEnumerator GenerateTerrain()
     {
-        //地表でなければ
-        if (worldIndex.y != 0)
-        {
-            //地形生成完了フラグを立てる
-            IsTerrainGenerateCompleted = true;
-            yield break;
-        }
-
         //バウンディングボックスのX,Y,Z起点位置までのオフセット
         Vector3 offset = size / 2 - center;
 
@@ -197,12 +185,11 @@ public partial class ChunkScript : MonoBehaviour
         {
             for (int z = 0; z < chunkSize; z++)
             {
-                //ノイズ生成
-                float noise = Mathf.PerlinNoise(
-                    (transform.position.x + x) / mapResolutionHorizontal,
-                    (transform.position.z + z) / mapResolutionHorizontal);
                 //地形の一番上の位置
-                int top = (int)Mathf.Round(mapResolutionVertical * noise);
+                int top = CalcNoiseHeight(transform.position.x + x, transform.position.z + z);
+                //自チャンクの高さにする
+                top = top - chunkSize * WorldIndex.y;
+
                 for (int y = 0; y < chunkSize; y++)
                 {
                     //生成予定の場所に変更点があるか取得
@@ -252,7 +239,7 @@ public partial class ChunkScript : MonoBehaviour
 
         //地形生成完了フラグを立てる
         IsTerrainGenerateCompleted = true;
-        Debug.Log("Generate Terrain : " + worldIndex.ToString());
+        Debug.Log("Generate Terrain : " + WorldIndex.ToString());
 
         //全チャンクの生成待ち
         while (true)
@@ -366,7 +353,7 @@ public partial class ChunkScript : MonoBehaviour
             if (ChunkManagerScript.IsCompleted) break;
             yield return null;
         }
-        Debug.Log("Create Chunk : " + worldIndex.ToString());
+        Debug.Log("Create Chunk : " + WorldIndex.ToString());
 
         for (int direction = (int)Direction.First; direction <= (int)Direction.Max; direction++)
         {
@@ -511,7 +498,7 @@ public partial class ChunkScript : MonoBehaviour
         if (IsKillTimerSet)
         {
             //削除タイマーをキャンセル
-            Debug.Log("Kill Timer Cancel: " + worldIndex.ToString());
+            Debug.Log("Kill Timer Cancel: " + WorldIndex.ToString());
             CancelInvoke(nameof(DestroyThis));
             IsKillTimerSet = false;
         }
@@ -543,11 +530,18 @@ public partial class ChunkScript : MonoBehaviour
         if (IsKillTimerSet) return;
 
         //Playerと離れすぎていれば
-        if (!IsFitIntoFar(worldIndex))
+        if (!IsFitIntoFar(WorldIndex))
         {
             //削除予約
-            Debug.Log("Kill Timer Begin: " + worldIndex.ToString());
-            Invoke(nameof(DestroyThis), 10);
+            Debug.Log("Kill Timer Begin: " + WorldIndex.ToString());
+            if (IsBoxBelong)
+            {
+                Invoke(nameof(DestroyThis), 180);
+            }
+            else
+            {
+                Invoke(nameof(DestroyThis), 10);
+            }
             IsKillTimerSet = true;
         }
     }
@@ -613,13 +607,16 @@ public partial class ChunkScript : MonoBehaviour
 
         if (box != null)
         {
+            //Boxの所属フラグを立てる
+            IsBoxBelong = true;
+
             //親を設定
             box.transform.SetParent(transform);
             //データを保存
             boxDatas[index.x, index.y, index.z] = new BoxData(box, box.GetComponent<BoxBase>());
             boxDatas[index.x, index.y, index.z]?.Script?.DisableIfNeeded();
             //メッシュ再結合フラグを立てる
-            isCombineMesh = true;
+            IsCombineMesh = true;
 
             //チャンクですでに変更が行われているか取得
             BoxSaveData change = changes.Find(data => data.Index == index);
@@ -693,7 +690,7 @@ public partial class ChunkScript : MonoBehaviour
                 if (acrossChunkScript == null)
                 {
                     //保存されていないだけかもしれないのでマネージャーから探す
-                    ChunkManagerScript.chunks.TryGetValue(worldIndex + directionOffset, out acrossChunkScript);
+                    ChunkManagerScript.chunks.TryGetValue(WorldIndex + directionOffset, out acrossChunkScript);
                     //保存
                     adjacentChunks[adjacentChunksIndex.x, adjacentChunksIndex.y, adjacentChunksIndex.z] = acrossChunkScript;
                 }
@@ -802,7 +799,7 @@ public partial class ChunkScript : MonoBehaviour
             if (acrossChunkScript == null)
             {
                 //保存されていないだけかもしれないのでマネージャーから探す
-                bool isExistChunk = ChunkManagerScript.chunks.TryGetValue(worldIndex + directionOffset, out acrossChunkScript);
+                bool isExistChunk = ChunkManagerScript.chunks.TryGetValue(WorldIndex + directionOffset, out acrossChunkScript);
                 if (isExistChunk)
                 {
                     //保存
@@ -888,7 +885,7 @@ public partial class ChunkScript : MonoBehaviour
         //保持データを消す
         boxDatas[index.x, index.y, index.z] = null;
         //メッシュ再結合フラグを立てる
-        isCombineMesh = true;
+        IsCombineMesh = true;
 
         //チャンクですでに変更が行われているか取得
         BoxSaveData change = changes.Find(data => data.Index == index);

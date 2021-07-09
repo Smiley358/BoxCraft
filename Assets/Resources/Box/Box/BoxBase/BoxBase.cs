@@ -142,11 +142,6 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         }
     }
 
-    private void OnEnable()
-    {
-
-    }
-
     /// <summary>
     /// ˆø”direction•ûŒü‚ÌBox‚ª—LŒø‰»‚³‚ê‚½‚Æ‚«‚ÉŒÄ‚Î‚ê‚é
     /// </summary>
@@ -218,7 +213,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         else
         {
             MeshUpdate(notAdjoining);
-            parentChunk.isCombineMesh = true;
+            parentChunk.IsCombineMesh = true;
         }
     }
 

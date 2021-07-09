@@ -9,11 +9,13 @@ public partial class ChunkScript
     //Boxのサイズ
     private const float boxSize = 1;
     //自動生成距離
-    private const int far = 1;
+    private const int far = 3;
     //ノイズ解像度（平行）
-    private const float mapResolutionHorizontal = 50.0f;
+    private const float mapScaleHorizontal = 0.007f;
     //ノイズ解像度（垂直）
-    private const float mapResolutionVertical = 25.0f;
+    private const float mapResolutionVertical = 75.0f;
+    //ランダムシード
+    private const int seed = 12345;
 
     //Playerのいるインデックス
     private static Index3D PlayerIndex;
@@ -212,9 +214,9 @@ public partial class ChunkScript
         //スクリプトの取得
         ChunkScript script = chunk.GetComponent<ChunkScript>();
         //インデックスを設定
-        script.worldIndex = chunkIndex;
+        script.WorldIndex = chunkIndex;
         //名前を変更
-        chunk.name = prefab.name + script.worldIndex.ToString();
+        chunk.name = prefab.name + script.WorldIndex.ToString();
 
         //チャンクを返す
         return chunk;

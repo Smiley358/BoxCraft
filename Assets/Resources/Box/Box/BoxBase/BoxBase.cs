@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -48,6 +49,8 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     protected MeshRenderer meshRenderer;
     //メッシュフィルター
     protected MeshFilter meshFilter;
+    //OnDestroy時に呼ばれるデリゲート
+    protected Action onDestroyDelegate;
     //HP
     [field: SerializeField] public int HP { get; protected set; } = 0;
     //最大HP
@@ -109,6 +112,19 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
 
         //初期化終了フラグを立てる
         isInitialized = true;
+
+        //デリゲートをセット
+        onDestroyDelegate = () =>
+        {
+            //隣接する6方向のBoxに対して通知
+            for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
+            {
+                //隣接するBoxの取得
+                ChunkScript.BoxData affiliationBox = parentChunk?.GetAdjacentBox(transform.position, (ChunkScript.Direction)i, false, true);
+                //有効化通知
+                affiliationBox?.Script?.OnDestroyNotification(ChunkScript.Direction.Bottom - i);
+            }
+        };
     }
 
     private void Awake()
@@ -130,16 +146,14 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         }
     }
 
+    private void OnApplicationQuit()
+    {
+        onDestroyDelegate = null;
+    }
+
     private void OnDestroy()
     {
-        //隣接する6方向のBoxに対して通知
-        for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
-        {
-            //隣接するBoxの取得
-            ChunkScript.BoxData affiliationBox = parentChunk?.GetAdjacentBox(transform.position, (ChunkScript.Direction)i, false, true);
-            //有効化通知
-            affiliationBox?.Script?.OnDestroyNotification(ChunkScript.Direction.Bottom - i);
-        }
+        onDestroyDelegate?.Invoke();
     }
 
     /// <summary>

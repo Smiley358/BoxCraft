@@ -350,10 +350,16 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
     {
         //無敵時間中は何もしない
         if (isGod) return;
+        //インターフェース取得
+        var attackableInterface = EXAttackableObject.GetInterface(attacker);
+        //攻撃力取得
+        int attackPower = attackableInterface.GetAttackPower();
+
         //無敵タイマー開始
         isGod.Begin();
-        //HPカウントダウン
-        HP--;
+
+        //HPを減らす
+        HP -= attackPower;
 
         //HPがなくなった？
         if (HP > 0)
@@ -376,6 +382,18 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         {
             parentChunk.DestroyBox(gameObject);
         }
+    }
+
+    //Implementation from Interface:IAttackableObject
+    public virtual int GetAttackPower()
+    {
+        return 0;
+    }
+
+    //Implementation from Interface:IAttackableObject
+    public virtual float GetKnockBack()
+    {
+        return 0;
     }
 
     //Implementation from Interface:IItemizeObject,IMeshAccessor

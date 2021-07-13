@@ -24,10 +24,19 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
     private const RigidbodyConstraints NormalConstraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ | RigidbodyConstraints.FreezePositionY;
     //浮遊時のコンストレイント（X・Y回転を固定）
     private const RigidbodyConstraints FloatingConstraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+
+    //PlayerScriptのインスタンス
+    public static PlayerScript Player { get; private set; }
+
+    //HP
+    public int HP { get; private set; }
+
     //接地判定
     private bool IsGround;
     //視点ベクトル
     private Vector3 ViewVector;
+    //ノックバックベクトル
+    private Vector3 KnockBackVector;
     //PlayerのRigidbody
     private Rigidbody playerRigidbody;
     //攻撃可能フラグ
@@ -40,15 +49,27 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
     [SerializeField] private float mouseSensitivity;
     //ジャンプ力
     [SerializeField] private float jumpPower;
+    //ノックバック力の減衰力
+    [SerializeField] private float KnockBackAttenuation;
+    //ノックバックの最小値
+    [SerializeField] private float MinKnockBackPower;
+    //ノックバック時の浮かす力
+    [SerializeField] private float KnockBackPowerY;
 
     private void Awake()
     {
         //初期視点
         ViewVector = new Vector3(1.0f, 0.0f, 0.0f);
+        //ノックバックベクトル初期化
+        KnockBackVector = Vector3.zero;
         //最初は空中判定
         IsGround = false;
         //攻撃フラグ
         isAttacking = new TimeSpanFlag(350);
+        //HP初期化
+        HP = HPControler.MaxHP;
+        //インスタンスをセット
+        Player = this;
     }
 
     void Start()
@@ -57,8 +78,32 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
         playerRigidbody = GetComponent<Rigidbody>() ?? throw new PlayerInitializeFailException(paramName: nameof(playerRigidbody), message: "playerRigidbody cannot be null");
     }
 
+    private void FixedUpdate()
+    {
+        if (Mathf.Abs(Vector3.Distance(Vector3.zero, KnockBackVector)) >= MinKnockBackPower)
+        {
+            //ノックバック力の減衰
+            KnockBackVector *= KnockBackAttenuation;
+        }
+        else
+        {
+            KnockBackVector = Vector3.zero;
+        }
+    }
+
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.G))
+        {
+            HP -= 35;
+            Debug.Log("HP:" + HP.ToString());
+        }
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            HP += 15;
+            Debug.Log("HP:" + HP.ToString());
+        }
+
         //インベントリーが開いているときはカメラ動かさない
         if (!InventoryScript.Instance.IsActiveInventory)
         {
@@ -119,7 +164,7 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
             {
                 //ジャンプする場合重力の重力を加算しない
                 jumpVelocity = Vector3.up * jumpPower;
-                moveVelocity.y = jumpVelocity.y;
+                //xmoveVelocity.y = jumpVelocity.y;
                 //縦移動をなくす
                 playerRigidbody.constraints = FloatingConstraints;
                 //少し浮かす（Floatの誤差のせいで接地判定がぶれさせないバイアスがあるため）
@@ -133,7 +178,7 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
         }
 
         //移動加速度を設定
-        playerRigidbody.velocity = moveVelocity + jumpVelocity;
+        playerRigidbody.velocity = moveVelocity + jumpVelocity + KnockBackVector;
 
         //カメラとプレイヤーの視点設定
         LookAtSet();
@@ -183,10 +228,44 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
         playerRigidbody.constraints = FloatingConstraints;
     }
 
+    //Implementation from Interface:IAttackableObject
     public void OnAttack(in GameObject attackerObject)
     {
-        if (attackerObject.name != "BoxVariant_Spike") return;
+        //インターフェース取得
+        var attackableInterface = EXAttackableObject.GetInterface(attackerObject);
+        //攻撃力取得
+        int attackPower = attackableInterface.GetAttackPower();
+        //HPを減らす
+        HP -= attackPower;
 
-        Debug.Log("ダメージを受けました!!");
+        //ノックバック力
+        float knockBackPower = attackableInterface.GetKnockBack();
+        //ノックバックを受けるベクトル
+        Vector3 knockBackVector = transform.position - attackerObject.transform.position;
+        //攻撃者から真反対のベクトルを求める
+        knockBackVector.y = 0;
+        knockBackVector.Normalize();
+        knockBackVector *= knockBackPower;
+
+        playerRigidbody.constraints = FloatingConstraints;
+        //少し浮かす（Floatの誤差対策）
+        transform.position = transform.position + new Vector3(0, 0.08f, 0);
+        var velocity = playerRigidbody.velocity;
+        velocity.y += KnockBackPowerY;
+        playerRigidbody.velocity = velocity;
+
+        KnockBackVector = knockBackVector;
+    }
+
+    //Implementation from Interface:IAttackableObject
+    public int GetAttackPower()
+    {
+        return 1;
+    }
+
+    //Implementation from Interface:IAttackableObject
+    public float GetKnockBack()
+    {
+        return 15f;
     }
 }

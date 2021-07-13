@@ -57,11 +57,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Resources\Inventory\InventoryItem.cs" />
+    <Compile Include="Assets\Resources\Player\HPControler.cs" />
     <Compile Include="Assets\Resources\Item\ItemScript.cs" />
     <Compile Include="Assets\Resources\Box\Box\BoxVariant_RainforcedBox\RainforcedBoxScript.cs" />
     <Compile Include="Assets\Scripts\IMeshAccessor.cs" />
     <Compile Include="Assets\Resources\Box\Chunk\ChunkScript.cs" />
     <Compile Include="Assets\Resources\Box\Box\BoxVariant_WoodBox\WoodBoxScript.cs" />
+    <Compile Include="Assets\Resources\Box\Chunk\ChunkScript_Utils.cs" />
     <Compile Include="Assets\Resources\Box\Box\BoxVariant_DynamicBox\DynamicBoxScript.cs" />
     <Compile Include="Assets\Resources\Manager\RaycastManager.cs" />
     <Compile Include="Assets\Scripts\IAdjacetBoxNotifier.cs" />
@@ -86,9 +88,9 @@
     <Compile Include="Assets\Scripts\IItemizeObject.cs" />
     <Compile Include="Assets\Resources\Box\Chunk\ChunkManagerScript.cs" />
     <Compile Include="Assets\Resources\Player\PlayerScript.cs" />
+    <Compile Include="Assets\Resources\Player\HPScript.cs" />
     <Compile Include="Assets\Resources\Inventory\InventoryScript.cs" />
     <Compile Include="Assets\Resources\Item\ItemContentScript.cs" />
-    <Compile Include="Assets\Resources\Box\Chunk\ChunkScript_Utils.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

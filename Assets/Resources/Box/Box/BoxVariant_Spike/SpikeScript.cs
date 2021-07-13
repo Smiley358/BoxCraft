@@ -15,6 +15,18 @@ public class SpikeScript : BoxBase
         EXAttackableObject.AttackNotification(gameObject, other.gameObject);
     }
 
+    //Implementation from Interface:IAttackableObject
+    public override int GetAttackPower()
+    {
+        return 3;
+    }
+
+    //Implementation from Interface:IAttackableObject
+    public override float GetKnockBack()
+    {
+        return 20f;
+    }
+
     //Implementation from Interface:IItemizeObject
     public override Mesh GetMesh()
     {

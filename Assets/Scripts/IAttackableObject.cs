@@ -13,6 +13,18 @@ public interface IAttackableObject: IEventSystemHandler
     /// </summary>
     /// <param name="attackerObject">攻撃者</param>
     public void OnAttack(in GameObject attackerObject);
+
+    /// <summary>
+    /// 攻撃力の取得
+    /// </summary>
+    /// <returns>攻撃力</returns>
+    public int GetAttackPower();
+
+    /// <summary>
+    /// ノックバック力の取得
+    /// </summary>
+    /// <returns>ノックバック力</returns>
+    public float GetKnockBack();
 }
 
 //簡単にイベントを呼ぶためのラッパークラス
@@ -32,5 +44,15 @@ public static class EXAttackableObject
             {
                 opponent.OnAttack(owner);
             });
+    }
+
+    /// <summary>
+    /// IAttackableObjectの取得
+    /// </summary>
+    /// <param name="gameObject">取得対象のゲームオブジェクト</param>
+    /// <returns>IAttackableObject</returns>
+    public static IAttackableObject GetInterface(GameObject gameObject)
+    {
+        return gameObject?.GetComponent<IAttackableObject>();
     }
 }

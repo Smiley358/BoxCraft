@@ -91,6 +91,7 @@
     <Compile Include="Assets\Resources\Player\HPScript.cs" />
     <Compile Include="Assets\Resources\Inventory\InventoryScript.cs" />
     <Compile Include="Assets\Resources\Item\ItemContentScript.cs" />
+    <Compile Include="Assets\Scripts\NoiseTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

@@ -9,16 +9,19 @@ public partial class ChunkScript
     //Boxのサイズ
     private const float boxSize = 1;
     //自動生成距離
-    private const int far = 3;
+    private const int far = 0;
     //ノイズ解像度（平行）
     private const float mapScaleHorizontal = 0.007f;
     //ノイズ解像度（垂直）
-    private const float mapResolutionVertical = 75.0f;
+    private const int mapResolutionVertical = 75;
     //ランダムシード
     private const int seed = 12345;
 
     //Playerのいるインデックス
     private static Index3D PlayerIndex;
+
+    //現在地形生成中のチャンク
+    private static ChunkScript nowGenerateTerrainChunk;
 
     /// <summary>
     /// Boxの方向
@@ -200,6 +203,16 @@ public partial class ChunkScript
     {
         //インデックスを計算
         Index3D chunkIndex = CalcWorldIndex(position);
+
+        //TODO:Debug
+        if (chunkIndex.y < 0)
+        {
+            return null;
+        }
+        if (chunkIndex.y > 1)
+        {
+            return null;
+        }
 
         //インデックスが登録されていない（作られていない）か確認
         if (ChunkManagerScript.chunks.ContainsKey(chunkIndex))

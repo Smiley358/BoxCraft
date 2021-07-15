@@ -160,6 +160,30 @@ public partial class ChunkScript : MonoBehaviour
 
     private void OnDrawGizmos()
     {
+        //for (int x = 0; x < 256; x++)
+        //{
+        //    for (int z = 0; z < 256; z++)
+        //    {
+        //                var worldIndex = CalcWorldPositionFromBoxLocalIndex(new Index3D(x, chunkSize, z));
+        //                Index3D worldBoxIndex = new Index3D(x + chunkSize * WorldIndex.x, chunkSize, z + chunkSize * WorldIndex.z);
+
+        //                int biome = Noise.GetNoiseInt(worldBoxIndex.x, 0, worldBoxIndex.z, 80, 20, 1.5f);
+
+        //                if (biome >= 45)
+        //                {
+        //                    Gizmos.color = Color.green;
+        //                }
+        //                else
+        //                {
+        //                    Gizmos.color = Color.gray;
+        //                }
+
+        //                Gizmos.DrawCube(worldIndex, Vector3.one * 1.05f);
+
+        //    }
+        //}
+        //return;
+
         //境目が分からないのでデバッグ表示
         if (WorldIndex.y == 0)
         {
@@ -170,6 +194,37 @@ public partial class ChunkScript : MonoBehaviour
             Gizmos.color = Color.gray;
         }
         Gizmos.DrawWireCube(center, size);
+
+        //バイオームの表示
+        //for(int x = 0; x < chunkSize; x++)
+        //{
+        //    for(int z = 0; z < chunkSize; z++)
+        //    {
+        //        for (int y = chunkSize - 1; y >= 0; y--)
+        //        {
+        //            if (boxDatas[x, y, z] != null)
+        //            {
+        //                var worldIndex = CalcWorldPositionFromBoxLocalIndex(new Index3D(x, chunkSize, z));
+        //                Index3D worldBoxIndex = new Index3D(x + chunkSize * WorldIndex.x, chunkSize, z + chunkSize * WorldIndex.z);
+
+        //                int biome = Noise.GetNoiseInt(worldBoxIndex.x, 0, worldBoxIndex.z, 80, 20, 1.5f);
+
+        //                if (biome >= 45)
+        //                {
+        //                    Gizmos.color = Color.green;
+        //                }
+        //                else
+        //                {
+        //                    Gizmos.color = Color.gray;
+        //                }
+
+        //                Gizmos.DrawCube(boxDatas[x, y, z].Object.transform.position, Vector3.one * 1.05f);
+
+        //                break;
+        //            }
+        //        }
+        //    }
+        //}
     }
 
     /// <summary>
@@ -177,61 +232,22 @@ public partial class ChunkScript : MonoBehaviour
     /// </summary>
     private IEnumerator GenerateTerrain()
     {
-        //バウンディングボックスのX,Y,Z起点位置までのオフセット
-        Vector3 offset = size / 2 - center;
-
-        //地表のBoxと追加されたBoxを生成
+        //地形生成データの作成
         for (int x = 0; x < chunkSize; x++)
         {
             for (int z = 0; z < chunkSize; z++)
             {
-                //地形の一番上の位置
-                int top = CalcNoiseHeight(transform.position.x + x, transform.position.z + z);
-                //自チャンクの高さにする
-                top = top - chunkSize * WorldIndex.y;
-
                 for (int y = 0; y < chunkSize; y++)
                 {
-                    //生成予定の場所に変更点があるか取得
-                    BoxSaveData change = changes.Find(data => data.Index == new Index3D(x, y, z));
-                    GameObject createPrefab = null;
-                    //yがtopより小さい時
-                    if (y <= top)
+                    Index3D worldBoxIndex = new Index3D(
+                        x + chunkSize * WorldIndex.x,
+                        y + chunkSize * WorldIndex.y,
+                        z + chunkSize * WorldIndex.z);
+
+                    prefab = GetGenetrateBox(worldBoxIndex.x, worldBoxIndex.y, worldBoxIndex.z);
+                    if (prefab != null)
                     {
-                        //地表のBoxのみ
-                        if (y == top)
-                        {
-                            //通常生成のprefabを入れておく
-                            createPrefab = prefab;
-                        }
-                        //地形自動生成のデータのみ保持
                         boxGenerateData[x, y, z] = prefab.name;
-                    }
-
-                    //変更点があったら
-                    if (change != null)
-                    {
-                        //Nameがあれば何か置かれている
-                        if (change.Name.Length > 0)
-                        {
-                            //変更されたBoxのprefabをロード
-                            createPrefab = PrefabManager.Instance.GetPrefab(change.Name);
-                        }
-                        else
-                        {
-                            //Boxの削除データだったときなので何も生成しない
-                            createPrefab = null;
-                        }
-                    }
-
-                    //createPrefabがnullでなければ自動生成かセーブデータからの生成
-                    if (createPrefab != null)
-                    {
-                        //生成
-                        GameObject box = CreateBoxAndBelongToChunk(
-                            createPrefab,
-                            CalcWorldPositionFromBoxLocalIndex(new Index3D(x, y, z)),
-                            Quaternion.identity);
                     }
                 }
             }
@@ -239,7 +255,6 @@ public partial class ChunkScript : MonoBehaviour
 
         //地形生成完了フラグを立てる
         IsTerrainGenerateCompleted = true;
-        Debug.Log("Generate Terrain : " + WorldIndex.ToString());
 
         //全チャンクの生成待ち
         while (true)
@@ -248,34 +263,74 @@ public partial class ChunkScript : MonoBehaviour
             yield return null;
         }
 
-        //削除されたBox周辺のBoxの生成
-        var destroys = changes.FindAll(data => data.Name == "");
-        foreach (var destroyBox in destroys)
+        //地形生成を行うのは同時に1個までなのでほかのチャンクが生成中は待つ
+        while (true)
         {
-            //座標
-            Vector3 position = CalcWorldPositionFromBoxLocalIndex(destroyBox.Index);
-
-            //周辺に必要であればBoxを生成
-            CreateAdjacentBoxIfNeeded(position);
+            //地形生成チャンクがない場合
+            if (nowGenerateTerrainChunk == null)
+            {
+                //自分が地形生成する
+                nowGenerateTerrainChunk = this;
+                break;
+            }
+            yield return null;
         }
 
-        //チャンク内の全Box
+        //最表面のBoxのみ生成
         for (int x = 0; x < chunkSize; x++)
         {
             for (int z = 0; z < chunkSize; z++)
             {
                 for (int y = 0; y < chunkSize; y++)
                 {
-                    //必要に応じて無効化させる
-                    var script = boxDatas[x, y, z]?.Script;
-                    if (script != null)
+                    //インデックス
+                    Index3D index = new Index3D(x, y, z);
+                    //表示される面があるか
+                    bool canView = CanViewBox(index);
+
+                    //6面のいずれかに接しているBoxがない、見えるBoxなら
+                    if (canView)
                     {
-                        script.DisableIfNeeded();
+                        //生成予定の場所に変更点があるか取得
+                        BoxSaveData change = changes.Find(data => data.Index == new Index3D(x, y, z));
+                        //生成するプレハブ名
+                        string createPrefabName = boxGenerateData[x, y, z];
+
+                        //変更点があったら
+                        if (change != null)
+                        {
+                            //Nameがあれば何か置かれている
+                            if (change.Name.Length > 0)
+                            {
+                                //変更されたBoxのprefabをロード
+                                createPrefabName = change.Name;
+                            }
+                            else
+                            {
+                                //Boxの削除データだったときなので何も生成しない
+                                createPrefabName = null;
+                            }
+                        }
+
+                        //createPrefabがnullでなければ自動生成かセーブデータからの生成
+                        if (createPrefabName != null)
+                        {
+                            //プレハブ取得
+                            prefab = PrefabManager.Instance.GetPrefab(createPrefabName);
+                            //生成
+                            GameObject box = CreateBoxAndBelongToChunk(
+                                prefab,
+                                CalcWorldPositionFromBoxLocalIndex(new Index3D(x, y, z)),
+                                Quaternion.identity);
+                        }
                     }
                 }
             }
             yield return null;
         }
+
+        //地形生成終わったのでnullへ
+        nowGenerateTerrainChunk = null;
 
         //メッシュを結合
         CombineMesh();
@@ -634,9 +689,33 @@ public partial class ChunkScript : MonoBehaviour
     }
 
     /// <summary>
-    /// 近隣のBoxを取得する
+    /// 隣接Boxリストを取得
     /// </summary>
-    /// <param name="baseBox">基準Box</param>
+    /// <param name="position">基準</param>
+    /// <param name="autoCreate">無かったら作るかどうか</param>
+    /// <param name="acrossChunk">チャンクをまたいで処理するかどうか</param>
+    /// <returns></returns>
+    public List<BoxData> GetAdjacentBox(Vector3 position, bool autoCreate = false, bool acrossChunk = false)
+    {
+        List<BoxData> datas = null;
+        for (int i = (int)Direction.Top; i <= (int)Direction.Bottom; i++)
+        {
+            //隣接するBoxの取得
+            BoxData adjacentBox = GetAdjacentBox(transform.position, (Direction)i, autoCreate, acrossChunk);
+            if (adjacentBox != null)
+            {
+                datas ??= new List<BoxData>();
+                datas.Add(adjacentBox);
+            }
+        }
+
+        return datas;
+    }
+
+    /// <summary>
+    /// 指定方向に接しているBoxを取得する
+    /// </summary>
+    /// <param name="position">基準</param>
     /// <param name="direction">基準Boxからどの方向のBoxか</param>
     /// <param name="autoCreate">無かったら作るかどうか</param>
     /// <param name="acrossChunk">チャンクをまたいで処理するかどうか</param>
@@ -660,8 +739,8 @@ public partial class ChunkScript : MonoBehaviour
 
         //インデックス
         Index3D index = new Index3D(
-            (int)Mathf.Floor(localPosition.x), 
-            (int)Mathf.Floor(localPosition.y), 
+            (int)Mathf.Floor(localPosition.x),
+            (int)Mathf.Floor(localPosition.y),
             (int)Mathf.Floor(localPosition.z));
 
         //自チャンク外なら
@@ -761,6 +840,32 @@ public partial class ChunkScript : MonoBehaviour
         return boxData;
     }
 
+    /// <summary>
+    /// どこか一面でも見ることができるのか
+    /// </summary>
+    /// <param name="index">調べたいBoxのインデックス</param>
+    /// <returns>一面でも見えるのであればTrue</returns>
+    public bool CanViewBox(Index3D index)
+    {
+        bool canView = false;
+
+        for (int i = (int)Direction.Top; i <= (int)Direction.Bottom; i++)
+        {
+            //隣接するBoxの取得
+            bool exist = IsAdjacetBoxExist(index, (Direction)i);
+
+            //Boxが見つからなければ
+            if (!exist)
+            {
+                //表示される面がある
+                canView = true;
+                break;
+            }
+        }
+        return canView;
+    }
+
+
 
     /// <summary>
     /// 隣接するBoxがあるか確認する
@@ -769,10 +874,10 @@ public partial class ChunkScript : MonoBehaviour
     /// <param name="baseBox">基準Box</param>
     /// <param name="direction">基準Boxからどの方向のBoxか</param>
     /// <returns>direction方向のBoxが存在するか</returns>
-    public bool IsAdjacetBoxExist(GameObject baseBox, Direction direction)
+    public bool IsAdjacetBoxExist(Index3D index, Direction direction)
     {
         //baseBoxのインデックス
-        Index3D index = CalcLocalIndexFromBoxWorldPosition(baseBox.transform.position);
+        //Index3D index = CalcLocalIndexFromBoxWorldPosition(baseBox.transform.position);
         //direction方向のBoxのインデックスにする
         index += new Index3D(DirectionOffset[(int)direction][X], DirectionOffset[(int)direction][Y], DirectionOffset[(int)direction][Z]);
 

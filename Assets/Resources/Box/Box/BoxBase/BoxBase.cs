@@ -208,7 +208,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
         for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
         {
             //—×Ú‚·‚éBox‚ÌŽæ“¾
-            bool isAdjacetBoxExist = parentChunk?.IsAdjacetBoxExist(gameObject, (ChunkScript.Direction)i) ?? false;
+            bool isAdjacetBoxExist = parentChunk?.IsAdjacetBoxExist(parentChunk.CalcLocalIndexFromBoxWorldPosition(gameObject.transform.position), (ChunkScript.Direction)i) ?? false;
             //‰½‚à‚È‚¯‚ê‚ÎBox‚ª‘¶Ý‚µ‚Ä‚¢‚È‚¢‚Æ‚¢‚¤‚±‚Æ
             if (isAdjacetBoxExist == false)
             {
@@ -245,7 +245,7 @@ public abstract class BoxBase : MonoBehaviour, IAttackableObject, IItemizeObject
             for (int i = (int)ChunkScript.Direction.Top; i <= (int)ChunkScript.Direction.Bottom; i++)
             {
                 //—×Ú‚·‚éBox‚ÌŽæ“¾
-                bool isAdjacetBoxExist = parentChunk?.IsAdjacetBoxExist(gameObject, (ChunkScript.Direction)i) ?? false;
+                bool isAdjacetBoxExist = parentChunk?.IsAdjacetBoxExist(parentChunk.CalcLocalIndexFromBoxWorldPosition(gameObject.transform.position), (ChunkScript.Direction)i) ?? false;
                 //‰½‚à‚È‚¯‚ê‚ÎBox‚ª‘¶Ý‚µ‚Ä‚¢‚È‚¢‚Æ‚¢‚¤‚±‚Æ
                 if (isAdjacetBoxExist == false)
                 {

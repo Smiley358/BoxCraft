@@ -164,21 +164,30 @@ public partial class ChunkScript : MonoBehaviour
         //{
         //    for (int z = 0; z < 256; z++)
         //    {
-        //                var worldIndex = CalcWorldPositionFromBoxLocalIndex(new Index3D(x, chunkSize, z));
-        //                Index3D worldBoxIndex = new Index3D(x + chunkSize * WorldIndex.x, chunkSize, z + chunkSize * WorldIndex.z);
+        //        var worldIndex = CalcWorldPositionFromBoxLocalIndex(new Index3D(x, chunkSize, z));
+        //        Index3D worldBoxIndex = new Index3D(x + chunkSize * WorldIndex.x, chunkSize, z + chunkSize * WorldIndex.z);
 
-        //                int biome = Noise.GetNoiseInt(worldBoxIndex.x, 0, worldBoxIndex.z, 80, 20, 1.5f);
+        //        int mountain = Noise.GetNoiseInt(worldBoxIndex.x, 0, worldBoxIndex.z, 80, 20, 1.5f);
+        //        int mountainThreshold = 45;
 
-        //                if (biome >= 45)
-        //                {
-        //                    Gizmos.color = Color.green;
-        //                }
-        //                else
-        //                {
-        //                    Gizmos.color = Color.gray;
-        //                }
+        //        int water = Noise.GetNoiseInt(worldBoxIndex.x, 200, worldBoxIndex.z, 130, 19, 2f);
+        //        water += Noise.GetNoiseInt(x, 50, z, 160, 13, 2f);
+        //        int waterThreshold = 200;
 
-        //                Gizmos.DrawCube(worldIndex, Vector3.one * 1.05f);
+        //        if (mountain >= mountainThreshold)
+        //        {
+        //            Gizmos.color = Color.green;
+        //        }
+        //        else if (water >= waterThreshold)
+        //        {
+        //            Gizmos.color = Color.blue;
+        //        }
+        //        else
+        //        {
+        //            Gizmos.color = Color.gray;
+        //        }
+
+        //        Gizmos.DrawCube(worldIndex, Vector3.one * 1.05f);
 
         //    }
         //}
@@ -196,35 +205,43 @@ public partial class ChunkScript : MonoBehaviour
         Gizmos.DrawWireCube(center, size);
 
         //バイオームの表示
-        //for(int x = 0; x < chunkSize; x++)
-        //{
-        //    for(int z = 0; z < chunkSize; z++)
-        //    {
-        //        for (int y = chunkSize - 1; y >= 0; y--)
-        //        {
-        //            if (boxDatas[x, y, z] != null)
-        //            {
-        //                var worldIndex = CalcWorldPositionFromBoxLocalIndex(new Index3D(x, chunkSize, z));
-        //                Index3D worldBoxIndex = new Index3D(x + chunkSize * WorldIndex.x, chunkSize, z + chunkSize * WorldIndex.z);
+        for (int x = 0; x < chunkSize; x++)
+        {
+            for (int z = 0; z < chunkSize; z++)
+            {
+                for (int y = chunkSize - 1; y >= 0; y--)
+                {
+                    if (boxDatas[x, y, z] != null)
+                    {
+                        Index3D worldBoxIndex = new Index3D(x + chunkSize * WorldIndex.x, chunkSize, z + chunkSize * WorldIndex.z);
 
-        //                int biome = Noise.GetNoiseInt(worldBoxIndex.x, 0, worldBoxIndex.z, 80, 20, 1.5f);
+                        int mountain = Noise.GetNoiseInt(worldBoxIndex.x, 0, worldBoxIndex.z, 80, 20, 1.5f);
+                        int mountainThreshold = 45;
 
-        //                if (biome >= 45)
-        //                {
-        //                    Gizmos.color = Color.green;
-        //                }
-        //                else
-        //                {
-        //                    Gizmos.color = Color.gray;
-        //                }
+                        int water = Noise.GetNoiseInt(worldBoxIndex.x, 200, worldBoxIndex.z, 130, 19, 2f);
+                        water += Noise.GetNoiseInt(x, 50, z, 160, 13, 2f);
+                        int waterThreshold = 210;
 
-        //                Gizmos.DrawCube(boxDatas[x, y, z].Object.transform.position, Vector3.one * 1.05f);
+                        if (mountain >= mountainThreshold)
+                        {
+                            Gizmos.color = Color.green;
+                        }
+                        else if (water >= waterThreshold)
+                        {
+                            Gizmos.color = Color.blue;
+                        }
+                        else
+                        {
+                            Gizmos.color = Color.gray;
+                        }
 
-        //                break;
-        //            }
-        //        }
-        //    }
-        //}
+                        Gizmos.DrawCube(boxDatas[x, y, z].Object.transform.position, Vector3.one * 1.05f);
+
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>

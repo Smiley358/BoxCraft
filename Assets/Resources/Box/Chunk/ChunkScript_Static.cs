@@ -9,7 +9,7 @@ public partial class ChunkScript
     //Boxのサイズ
     private const float boxSize = 1;
     //自動生成距離
-    private const int far = 0;
+    private const int far = 2;
     //ノイズ解像度（平行）
     private const float mapScaleHorizontal = 0.007f;
     //ノイズ解像度（垂直）
@@ -205,7 +205,7 @@ public partial class ChunkScript
         Index3D chunkIndex = CalcWorldIndex(position);
 
         //TODO:Debug
-        if (chunkIndex.y < 0)
+        if (chunkIndex.y < -1)
         {
             return null;
         }

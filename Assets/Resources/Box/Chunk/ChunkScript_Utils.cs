@@ -85,18 +85,27 @@ public partial class ChunkScript
     /// <returns></returns>
     public GameObject GetGenetrateBox(int x, int y, int z)
     {
+        int mountain = Noise.GetNoiseInt(x, 0, z, 80, 20, 1.5f);
         int mountainThreshold = 45;
 
-        int biome = Noise.GetNoiseInt(x, 0, z, 80, 20, 1.5f);
+        int water = Noise.GetNoiseInt(x, 200, z, 130, 19, 2f);
+        water += Noise.GetNoiseInt(x, 50, z, 160, 13, 2f);
+        int waterThreshold = 210;
 
         //Î‚ÌÅ‘å‚‚³‚ğæ“¾
         int stone = Noise.GetNoiseInt(x, y, z, 75, 5, 1.2f);
         //“y‚ÌÅ‘å‚‚³‚ğæ“¾
         int dirt = Noise.GetNoiseInt(x, y, z, 100, 15, 0);
-        if (biome >= mountainThreshold)
+
+        if (mountain >= mountainThreshold)
         {
-            //Î‚ÌÅ‘å‚‚³‚ğæ“¾
-            stone += biome - mountainThreshold;
+            //Î‚ÌÅ‘å‚‚³‚ğ’²®
+            stone += mountain - mountainThreshold;
+        }
+        else if (water >= waterThreshold)
+        {
+            //Î‚ÌÅ‘å‚‚³‚ğ’²®
+            stone -= (int)((water - waterThreshold) / 3f);
         }
 
         if (y <= stone)

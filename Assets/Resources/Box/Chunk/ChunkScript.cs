@@ -146,7 +146,7 @@ public partial class ChunkScript : MonoBehaviour
 
                 Vector3 offset = new Vector3(DirectionOffset[direction][X], DirectionOffset[direction][Y], DirectionOffset[direction][Z]);
                 offset *= chunkSize;
-                Index3D index3D = CalcWorldIndex(center + offset);
+                Index3D index3D = CalcChunkWorldIndexFromChunkWorldPosition(center + offset);
                 //全チャンクデータから探す
                 if (ChunkManagerScript.chunks.ContainsKey(index3D))
                 {
@@ -205,43 +205,43 @@ public partial class ChunkScript : MonoBehaviour
         Gizmos.DrawWireCube(center, size);
 
         //バイオームの表示
-        for (int x = 0; x < chunkSize; x++)
-        {
-            for (int z = 0; z < chunkSize; z++)
-            {
-                for (int y = chunkSize - 1; y >= 0; y--)
-                {
-                    if (boxDatas[x, y, z] != null)
-                    {
-                        Index3D worldBoxIndex = new Index3D(x + chunkSize * WorldIndex.x, chunkSize, z + chunkSize * WorldIndex.z);
+        //for (int x = 0; x < chunkSize; x++)
+        //{
+        //    for (int z = 0; z < chunkSize; z++)
+        //    {
+        //        for (int y = chunkSize - 1; y >= 0; y--)
+        //        {
+        //            if (boxDatas[x, y, z] != null)
+        //            {
+        //                Index3D worldBoxIndex = new Index3D(x + chunkSize * WorldIndex.x, chunkSize, z + chunkSize * WorldIndex.z);
 
-                        int mountain = Noise.GetNoiseInt(worldBoxIndex.x, 0, worldBoxIndex.z, 80, 20, 1.5f);
-                        int mountainThreshold = 45;
+        //                int mountain = Noise.GetNoiseInt(worldBoxIndex.x, 0, worldBoxIndex.z, 80, 20, 1.5f);
+        //                int mountainThreshold = 45;
 
-                        int water = Noise.GetNoiseInt(worldBoxIndex.x, 200, worldBoxIndex.z, 130, 19, 2f);
-                        water += Noise.GetNoiseInt(x, 50, z, 160, 13, 2f);
-                        int waterThreshold = 210;
+        //                int water = Noise.GetNoiseInt(worldBoxIndex.x, 200, worldBoxIndex.z, 130, 19, 2f);
+        //                water += Noise.GetNoiseInt(x, 50, z, 160, 13, 2f);
+        //                int waterThreshold = 210;
 
-                        if (mountain >= mountainThreshold)
-                        {
-                            Gizmos.color = Color.green;
-                        }
-                        else if (water >= waterThreshold)
-                        {
-                            Gizmos.color = Color.blue;
-                        }
-                        else
-                        {
-                            Gizmos.color = Color.gray;
-                        }
+        //                if (mountain >= mountainThreshold)
+        //                {
+        //                    Gizmos.color = Color.green;
+        //                }
+        //                else if (water >= waterThreshold)
+        //                {
+        //                    Gizmos.color = Color.blue;
+        //                }
+        //                else
+        //                {
+        //                    Gizmos.color = Color.gray;
+        //                }
 
-                        Gizmos.DrawCube(boxDatas[x, y, z].Object.transform.position, Vector3.one * 1.05f);
+        //                Gizmos.DrawCube(boxDatas[x, y, z].Object.transform.position, Vector3.one * 1.05f);
 
-                        break;
-                    }
-                }
-            }
-        }
+        //                break;
+        //            }
+        //        }
+        //    }
+        //}
     }
 
     /// <summary>
@@ -398,7 +398,7 @@ public partial class ChunkScript : MonoBehaviour
                 //生成する座標
                 Vector3 position = calcCreatePositionDelegate(direction);
                 //生成するインデックス
-                Index3D index3D = CalcWorldIndex(position);
+                Index3D index3D = CalcChunkWorldIndexFromChunkWorldPosition(position);
                 //全チャンクデータから探す
                 if (ChunkManagerScript.chunks.ContainsKey(index3D))
                 {
@@ -442,7 +442,7 @@ public partial class ChunkScript : MonoBehaviour
                 }
 
                 //生成するインデックス
-                Index3D index3D = CalcWorldIndex(calcCreatePositionDelegate(direction));
+                Index3D index3D = CalcChunkWorldIndexFromChunkWorldPosition(calcCreatePositionDelegate(direction));
                 //生成予約していたら
                 if (createList.Contains(index3D))
                 {
@@ -888,11 +888,14 @@ public partial class ChunkScript : MonoBehaviour
     /// 隣接するBoxがあるか確認する
     /// チャンク外なら当該チャンク内を確認
     /// </summary>
-    /// <param name="baseBox">基準Box</param>
+    /// <param name="index">基準Boxのインデックス</param>
     /// <param name="direction">基準Boxからどの方向のBoxか</param>
     /// <returns>direction方向のBoxが存在するか</returns>
     public bool IsAdjacetBoxExist(Index3D index, Direction direction)
     {
+        //基準インデックスが半透明Boxかどうか
+        bool isTransparentBox = IsTransparentBox(GetPrefabName(index));
+
         //baseBoxのインデックス
         //Index3D index = CalcLocalIndexFromBoxWorldPosition(baseBox.transform.position);
         //direction方向のBoxのインデックスにする
@@ -930,21 +933,24 @@ public partial class ChunkScript : MonoBehaviour
             }
 
             //当該チャンクのBoxデータを取得
-            return acrossChunkScript?.IsBoxExist(convertIndex) ?? false;
+            return acrossChunkScript?.IsBoxExist(convertIndex,isTransparentBox) ?? false;
         }
 
         //Boxを返す
-        return IsBoxExist(index);
+        return IsBoxExist(index, isTransparentBox);
     }
 
     /// <summary>
     /// Boxが存在するか確認する
     /// 作成されていない場合は自動生成データを確認し
     /// 自動生成されるはずの箇所であればTrueを返す
+    /// 確認元のBoxDataを渡すと、半透明ブロック同士の場合
+    /// 存在判定にする
     /// </summary>
     /// <param name="index">確認したいインデックス</param>
+    /// <param name="isTransparentBaseBox">確認元のBoxが半透明かどうか</param>
     /// <returns>存在もしくは自動生成される場合はTrue</returns>
-    private bool IsBoxExist(Index3D index)
+    private bool IsBoxExist(Index3D index, bool isTransparentBaseBox = false)
     {
         //インデックス外であればチャンク外なのでBoxが存在しない判定
         if (!index.IsFitIntoRange(0, chunkSize - 1))
@@ -952,15 +958,73 @@ public partial class ChunkScript : MonoBehaviour
             return false;
         }
 
+        //prefab名を取得（無ければnullが入る）
+        string prefabName = GetPrefabName(index);
+
+        //プレハブ名が取得できたかどうか（Boxが生成されているかどうか）
+        bool isExists = false;
+
+        //prefabNameが空じゃなかったら
+        if (!string.IsNullOrEmpty(prefabName))
+        {
+            bool isTransparentBox = IsTransparentBox(prefabName);
+
+            //比較元Boxが半透明Boxなら
+            if (isTransparentBaseBox)
+            {
+                //比較対象が半透明なら
+                if (isTransparentBox)
+                {
+                    isExists = true;
+                }
+                //比較対象が不透明なら
+                else
+                {
+                    isExists = false;
+                }
+            }
+            //比較元が半透明でない場合
+            else
+            {
+                //半透明ブロックでなければ
+                if (!isTransparentBox)
+                {
+                    //存在する判定（半透明ブロックは透けるため存在しない判定にする）
+                    isExists = true;
+                }
+            }
+        }
+
+        //Boxを返す
+        return isExists;
+    }
+
+    /// <summary>
+    /// プレハブ名の取得
+    /// 生成されていても、されていなくても
+    /// 変更の有無も含めて指定インデックスの
+    /// Boxの名前を取得する
+    /// </summary>
+    /// <param name="index">名前を取得したいBoxのインデックス</param>
+    /// <returns></returns>
+    public string GetPrefabName(Index3D index)
+    {
+        //インデックス外であればチャンク外なのでBoxが存在しない判定
+        if (!index.IsFitIntoRange(0, chunkSize - 1))
+        {
+            return null;
+        }
+
+        //prefab名
+        string prefabName = null;
+
         //当該インデックスのボックスデータを取得
-        bool isExists = boxDatas?[index.x, index.y, index.z] != null;
-        //Boxが存在しないなら
-        if (!isExists)
+        BoxData boxData = boxDatas?[index.x, index.y, index.z];
+        //Boxが存在しない場合
+        if (boxData == null)
         {
             //変更データ
-            var change = changes.Find(data => data.Index == index);
-            //prefab名
-            string prefabName = null;
+            BoxSaveData change = changes.Find(data => data.Index == index);
 
             //変更点がある
             if (change != null)
@@ -974,16 +1038,15 @@ public partial class ChunkScript : MonoBehaviour
                 //自動生成状況を取得
                 prefabName = boxGenerateData?[index.x, index.y, index.z];
             }
-
-            //prefabNameが空じゃなかったら
-            if (!string.IsNullOrEmpty(prefabName))
-            {
-                isExists = true;
-            }
+        }
+        //Boxデータが存在する
+        else
+        {
+            prefabName = boxData.Object.name;
         }
 
         //Boxを返す
-        return isExists;
+        return prefabName;
     }
 
     /// <summary>

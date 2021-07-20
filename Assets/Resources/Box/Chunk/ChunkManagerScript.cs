@@ -26,7 +26,7 @@ public class ChunkManagerScript : MonoBehaviour
     void Start()
     {
         //最初の一個を作る
-        CreateOrder(new Vector3(0, 0, 0));
+        CreateOrder(new Vector3(1 * 32, -1 * 32, 2 * 32));
     }
 
     private void Update()
@@ -133,7 +133,7 @@ public class ChunkManagerScript : MonoBehaviour
             //生成フラグを下す
             isCreate = false;
             //失敗したリストに入れる
-            createFailedList.Add(ChunkScript.CalcWorldIndex(position));
+            createFailedList.Add(ChunkScript.CalcChunkWorldIndexFromChunkWorldPosition(position));
             //中断
             yield break;
         }

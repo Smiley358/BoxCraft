@@ -8,7 +8,7 @@ class PlayerInitializeFailException : Exception
 {
     private string paramName;
 
-    public PlayerInitializeFailException(string paramName,string message) : base(message)
+    public PlayerInitializeFailException(string paramName, string message) : base(message)
     {
         this.paramName = paramName;
     }
@@ -33,6 +33,8 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
 
     //接地判定
     private bool IsGround;
+    //液体中判定
+    private bool IsSwim;
     //視点ベクトル
     private Vector3 ViewVector;
     //ノックバックベクトル
@@ -49,6 +51,12 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
     [SerializeField] private float mouseSensitivity;
     //ジャンプ力
     [SerializeField] private float jumpPower;
+    //泳ぐ力
+    [SerializeField] private float swimPower;
+    //泳ぐ際の速度
+    [SerializeField] private float swimSpeed;
+    //水中での重力
+    [SerializeField] private float swimGravity;
     //ノックバック力の減衰力
     [SerializeField] private float KnockBackAttenuation;
     //ノックバックの最小値
@@ -93,6 +101,7 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
 
     void Update()
     {
+
         if (Input.GetKeyDown(KeyCode.G))
         {
             HP -= 35;
@@ -141,38 +150,53 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
 
 
         //カメラ正面
-        Vector3 camForward = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
+        Vector3 camForward = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 1, 1)).normalized;
         //移動ベクトル
         Vector3 moveVelocity = (camForward * Input.GetAxis("Vertical")) + (Camera.main.transform.right * Input.GetAxis("Horizontal"));
         //ジャンプベクトル
         Vector3 jumpVelocity = Vector3.zero;
 
-        //スピード計算
-        moveVelocity *= speed;
-        //Y軸移動は重力計算に任せる
-        moveVelocity.y = 0;
-
-        if (IsGround)
+        //泳ぎ中なら
+        if (IsSwim)
         {
-            //スプリント
-            if (Input.GetKey(KeyCode.LeftShift))
-            {
-                moveVelocity *= sprintSpeed;
-            }
-            //ジャンプ
-            if (Input.GetKeyDown(KeyCode.Space))
+            //縦移動を解禁
+            playerRigidbody.constraints = FloatingConstraints;
+
+            if (Input.GetKey(KeyCode.Space))
             {
                 //ジャンプする場合重力の重力を加算しない
-                jumpVelocity = Vector3.up * jumpPower;
-                //xmoveVelocity.y = jumpVelocity.y;
-                //縦移動をなくす
-                playerRigidbody.constraints = FloatingConstraints;
-                //少し浮かす（Floatの誤差のせいで接地判定がぶれさせないバイアスがあるため）
-                transform.position = transform.position + new Vector3(0, 0.03f, 0);
+                jumpVelocity = Vector3.up * swimPower;
             }
+
+            //水中での移動速度にする
+            moveVelocity.Scale(new Vector3(swimSpeed, swimSpeed, swimSpeed));
+            moveVelocity.y += swimGravity;
         }
         else
         {
+            //スピード計算
+            moveVelocity *= speed;
+            //接地
+            if (IsGround)
+            {
+                //Y軸移動は重力計算に任せる
+                moveVelocity.y = 0;
+                //スプリント
+                if (Input.GetKey(KeyCode.LeftShift))
+                {
+                    moveVelocity *= sprintSpeed;
+                }
+                //ジャンプ
+                if (Input.GetKeyDown(KeyCode.Space))
+                {
+                    //ジャンプする場合重力の重力を加算しない
+                    jumpVelocity = Vector3.up * jumpPower;
+                    //縦移動を解禁
+                    playerRigidbody.constraints = FloatingConstraints;
+                    //少し浮かす（Floatの誤差のせいで接地判定をぶれさせないように少しめり込ませているため）
+                    transform.position = transform.position + new Vector3(0, 0.03f, 0);
+                }
+            }
             //浮遊中は物理演算の落下に任せる
             moveVelocity.y = playerRigidbody.velocity.y;
         }
@@ -184,13 +208,45 @@ public class PlayerScript : MonoBehaviour, IGroundCheck, IAttackableObject
         LookAtSet();
     }
 
+    private void LateUpdate()
+    {
+        var boxName = ChunkScript.GetPrefabName(transform.position);
+
+        if (boxName == "BoxVariant_Water")
+        {
+            IsSwim = true;
+        }
+        else
+        {
+            IsSwim = false;
+        }
+    }
+
     private void OnTriggerEnter(Collider other)
     {
-        //アイテムじゃないなら何もしない
-        if (other.gameObject.name != "ItemContent") return;
+        switch (other.gameObject.name)
+        {
+            case "ItemContent":
+                //アイテムの追加
+                InventoryScript.Instance.TryAddItem(other.gameObject.transform.parent.GetComponent<ItemScript>());
+                break;
 
-        //アイテムの追加
-        InventoryScript.Instance.TryAddItem(other.gameObject.transform.parent.GetComponent<ItemScript>());
+            default:
+                return;
+        }
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        switch (other.gameObject.name)
+        {
+            case "BoxVariant_Water":
+                IsSwim = true;
+                break;
+
+            default:
+                return;
+        }
     }
 
     /// <summary>

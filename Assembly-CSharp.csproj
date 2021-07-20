@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="Assets\Resources\Inventory\InventoryItem.cs" />
     <Compile Include="Assets\Resources\Player\HPControler.cs" />
+    <Compile Include="Assets\Scripts\NoiseTest.cs" />
     <Compile Include="Assets\Resources\Item\ItemScript.cs" />
     <Compile Include="Assets\Resources\Box\Box\BoxVariant_RainforcedBox\RainforcedBoxScript.cs" />
     <Compile Include="Assets\Scripts\IMeshAccessor.cs" />
@@ -78,6 +79,7 @@
     <Compile Include="Assets\Resources\Player\GroundCheckScript.cs" />
     <Compile Include="Assets\Resources\Inventory\SlotScript.cs" />
     <Compile Include="Assets\Scripts\TimeSpanFlag.cs" />
+    <Compile Include="Assets\Resources\Box\Box\BoxVariant_Water\WaterScript.cs" />
     <Compile Include="Assets\Scripts\JsonConverter.cs" />
     <Compile Include="Assets\Resources\Renderer\LinearTextureTileUVMappingScript.cs" />
     <Compile Include="Assets\Resources\Box\Box\BoxVariant_Tile\TileScript.cs" />
@@ -91,7 +93,7 @@
     <Compile Include="Assets\Resources\Player\HPScript.cs" />
     <Compile Include="Assets\Resources\Inventory\InventoryScript.cs" />
     <Compile Include="Assets\Resources\Item\ItemContentScript.cs" />
-    <Compile Include="Assets\Scripts\NoiseTest.cs" />
+    <Compile Include="Assets\Resources\Player\CameraFilterScript.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

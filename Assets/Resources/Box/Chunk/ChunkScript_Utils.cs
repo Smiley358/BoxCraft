@@ -66,9 +66,9 @@ public partial class ChunkScript
     {
         //ローカル座標の計算
         Vector3 localPosition = new Vector3(
-            position.x + (chunkSize / 2),
-            position.y + (chunkSize / 2),
-            position.z + (chunkSize / 2)) - center;
+            position.x + (chunkSize / 2f),
+            position.y + (chunkSize / 2f),
+            position.z + (chunkSize / 2f)) - center;
 
         return new Index3D(
             (int)Mathf.Floor(localPosition.x),
@@ -91,6 +91,7 @@ public partial class ChunkScript
         int water = Noise.GetNoiseInt(x, 200, z, 130, 19, 2f);
         water += Noise.GetNoiseInt(x, 50, z, 160, 13, 2f);
         int waterThreshold = 210;
+        bool isWater = false;
 
         //石の最大高さを取得
         int stone = Noise.GetNoiseInt(x, y, z, 75, 5, 1.2f);
@@ -106,6 +107,7 @@ public partial class ChunkScript
         {
             //石の最大高さを調整
             stone -= (int)((water - waterThreshold) / 3f);
+            isWater = true;
         }
 
         if (y <= stone)
@@ -115,6 +117,10 @@ public partial class ChunkScript
         else if (y <= dirt + stone)
         {
             return PrefabManager.Instance.GetPrefab("BoxVariant_WoodBox");
+        }
+        else if ((y <= 4) && isWater)
+        {
+            return PrefabManager.Instance.GetPrefab("BoxVariant_Water");
         }
         return null;
     }

@@ -21,6 +21,10 @@ public class GroundCheckScript : MonoBehaviour
 
     private void Update()
     {
+        //チャンクが作り終わるまで処理しない
+        //TODO:Test
+        //if (!ChunkManagerScript.IsCompleted) return;
+
         //レイを飛ばすベクトルのセット
         Ray ray = new Ray(parent.transform.position, Vector3.down);
         //レイが当たったオブジェクト

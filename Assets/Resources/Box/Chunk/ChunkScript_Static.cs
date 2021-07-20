@@ -9,7 +9,7 @@ public partial class ChunkScript
     //Boxのサイズ
     private const float boxSize = 1;
     //自動生成距離
-    private const int far = 2;
+    private const int far = 0;
     //ノイズ解像度（平行）
     private const float mapScaleHorizontal = 0.007f;
     //ノイズ解像度（垂直）
@@ -202,7 +202,7 @@ public partial class ChunkScript
     public static GameObject Create(Vector3 position)
     {
         //インデックスを計算
-        Index3D chunkIndex = CalcWorldIndex(position);
+        Index3D chunkIndex = CalcChunkWorldIndexFromChunkWorldPosition(position);
 
         //TODO:Debug
         if (chunkIndex.y < -1)
@@ -240,7 +240,7 @@ public partial class ChunkScript
     /// </summary>
     /// <param name="position">変換する座標</param>
     /// <returns>ワールドでのブロック単位の座標</returns>
-    public static Index3D CalcWorldIndex(Vector3 position)
+    public static Index3D CalcChunkWorldIndexFromChunkWorldPosition(Vector3 position)
     {
         Index3D index = new Index3D
             (
@@ -278,7 +278,7 @@ public partial class ChunkScript
     public static GameObject CreateBoxAndAutoBelongToChunk(GameObject prefab, Vector3 position, Quaternion rotation)
     {
         //まずBoxの生成位置のチャンクを調べる
-        Index3D index = CalcWorldIndex(position);
+        Index3D index = CalcChunkWorldIndexFromChunkWorldPosition(position);
         //チャンクがないので作れない
         if (!ChunkManagerScript.chunks.ContainsKey(index)) return null;
         //チャンクを取得
@@ -288,5 +288,45 @@ public partial class ChunkScript
         GameObject box = chunk.CreateBoxAndBelongToChunk(prefab, position, rotation);
         
         return box;
+    }
+
+    /// <summary>
+    /// 半透明かどうかを判別する
+    /// </summary>
+    /// <param name="name">確認したいBox名</param>
+    /// <returns>半透明ならTrue</returns>
+    private static bool IsTransparentBox(string name)
+    {
+        return name switch
+        {
+            "BoxVariant_Water" => true,
+            _ => false,
+        };
+    }
+
+    /// <summary>
+    /// プレハブ名の取得
+    /// 生成されていても、されていなくても
+    /// 変更の有無も含めて指定インデックスの
+    /// Boxの名前を取得する
+    /// </summary>
+    /// <param name="index">名前を取得したいBoxのインデックス</param>
+    /// <returns></returns>
+    public static string GetPrefabName(Vector3 position)
+    {
+        //チャンクの割り出し
+        Index3D chunkIndex = CalcChunkWorldIndexFromChunkWorldPosition(position);
+        if (ChunkManagerScript.chunks.ContainsKey(chunkIndex))
+        {
+            //positionのいるチャンク
+            var chunk = ChunkManagerScript.chunks[chunkIndex];
+            //positionのいる場所にあるBoxのインデックス
+            var index = chunk.CalcLocalIndexFromBoxWorldPosition(position);
+            //positionのいる場所にあるBox名
+            var boxName = chunk.GetPrefabName(index);
+
+            return boxName;
+        }
+        return null;
     }
 }
